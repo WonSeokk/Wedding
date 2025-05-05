@@ -1,6 +1,7 @@
 package com.wwon_seokk.wedding
 
 import Flippable
+import FlippableState
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.spring
@@ -19,7 +20,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.staggeredgrid.LazyVerticalStaggeredGrid
 import androidx.compose.foundation.lazy.staggeredgrid.StaggeredGridCells
 import androidx.compose.foundation.lazy.staggeredgrid.StaggeredGridItemSpan
@@ -45,11 +46,11 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import kotlinx.browser.document
+import kotlinx.browser.window
 import kotlinx.coroutines.delay
 import org.jetbrains.compose.resources.ExperimentalResourceApi
 import org.jetbrains.compose.resources.painterResource
 import org.w3c.dom.HTMLDivElement
-import org.w3c.dom.HTMLScriptElement
 import pxToDp
 import rememberFlipController
 import wedding.composeapp.generated.resources.Res
@@ -58,10 +59,29 @@ import wedding.composeapp.generated.resources.cover
 import wedding.composeapp.generated.resources.cover_background
 import wedding.composeapp.generated.resources.test
 
+
+@JsName("initNaverMap")
+external fun initNaverMap(elementId: String, lat: Double, lng: Double, zoom: Int)
+
+@JsName("showNaverMap")
+external fun showNaverMap(elementId: String, show: Boolean, positionY: Float)
+
+@JsName("registerMapBox")
+external fun registerMapBox(elementId: String)
+
+const val weddingLat = 37.481504867692
+const val weddingLng = 126.79853505353
+const val zoomLevel = 16
+
 @OptIn(ExperimentalResourceApi::class)
 @Composable
 fun App() {
     MaterialTheme {
+        LaunchedEffect(Unit) {
+            registerMapBox("map-box")
+            initNaverMap("map-container", weddingLat, weddingLng, zoomLevel)
+        }
+
         val flipController = rememberFlipController()
         var isFront by remember { mutableStateOf(false) }
         var isCoverBackground by remember { mutableStateOf(true) }
@@ -69,7 +89,10 @@ fun App() {
             delay(3800)
             isCoverBackground = false
         }
-        Box {
+        Box(
+            modifier = Modifier.fillMaxWidth(),
+            contentAlignment = Alignment.Center
+        ) {
             AnimatedVisibility(
                 visible = isCoverBackground,
                 enter = fadeIn(animationSpec = tween(durationMillis = 1500)),
@@ -96,7 +119,7 @@ fun App() {
             }
             Flippable(
                 modifier = Modifier
-                    .widthIn(max = 400.dp)
+                    .width(400.dp)
                     .fillMaxHeight()
                     .align(Alignment.Center),
                 frontSide = {
@@ -128,7 +151,6 @@ private fun Cover(
 
 @Composable
 private fun Content() {
-    var mapInitialized by remember { mutableStateOf(false) }
     val items = remember {
         listOf(
             Res.drawable.test,
@@ -230,12 +252,13 @@ private fun Content() {
                     }
                 }
             }
-            itemsIndexed (
+            itemsIndexed(
                 key = { i, item -> i },
                 items = items,
                 span = { i, item -> StaggeredGridItemSpan.SingleLane }
             ) { index, item ->
                 var isVisible by remember { mutableStateOf(false) }
+                val height = remember(window.innerWidth) { minOf(window.innerWidth * 265 / 400, 265) }
                 LaunchedEffect(Unit) {
                     isVisible = true
                 }
@@ -244,6 +267,7 @@ private fun Content() {
                     enter = fadeIn(animationSpec = tween(durationMillis = 1500)),
                     exit = fadeOut(animationSpec = tween(durationMillis = 1500))
                 ) {
+
                     Image(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -252,9 +276,9 @@ private fun Content() {
                                 fadeOutSpec = tween(durationMillis = 100),
                                 placementSpec = spring(stiffness = Spring.StiffnessLow, dampingRatio = Spring.DampingRatioMediumBouncy)
                             ).then(
-                                when(index) {
-                                    2,6,11 -> Modifier.height(265.dp)
-                                    else ->  Modifier.aspectRatio(1f)
+                                when (index) {
+                                    2, 6, 11 -> Modifier.height(height.dp)
+                                    else -> Modifier.aspectRatio(1f)
                                 }
                             ),
                         painter = painterResource(item),
@@ -266,21 +290,78 @@ private fun Content() {
             }
             item(span = StaggeredGridItemSpan.FullLine) {
                 var isVisible by remember { mutableStateOf(false) }
+                var positionY by remember { mutableStateOf(0f) }
 
                 LaunchedEffect(Unit) {
                     isVisible = true
                 }
+                DisposableEffect(Unit) {
+                    onDispose {
+                        showNaverMap("map-container", false, 0f)
+                    }
+                }
+
                 AnimatedVisibility(
                     visible = isVisible,
                     enter = fadeIn(animationSpec = tween(durationMillis = 1500)),
                     exit = fadeOut(animationSpec = tween(durationMillis = 1500))
                 ) {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(400.dp)
-                    ) {
-
+                    Column(modifier = Modifier.fillMaxWidth()) {
+                        Row(
+                            modifier = Modifier
+                                .padding(horizontal = 40.dp, vertical = 20.dp)
+                                .fillMaxWidth()
+                        ) {
+                            Text(
+                                text = "오시는 길",
+                                style = fontFamily.h2,
+                                fontSize = 16.sp,
+                                color = Color(0xFFB76E79),
+                                textAlign = TextAlign.Center
+                            )
+                            Spacer(modifier = Modifier.weight(1f))
+                            Text(
+                                text = "―――――――――――",
+                                style = fontFamily.h2,
+                                fontSize = 16.sp,
+                                color = Color(0xFFCFA8A8)
+                            )
+                        }
+                        Box(
+                            modifier = Modifier
+                                .width(360.dp)
+                                .height(300.dp)
+                                .padding(horizontal = 20.dp)
+                                .onGloballyPositioned { coordinates ->
+                                    val position = coordinates.positionInRoot()
+                                    if (position.y != positionY) {
+                                        positionY = position.y
+                                        val calY = 460 - (855 - window.innerHeight.toFloat())
+                                        showNaverMap("map-container", true, positionY - calY)
+                                    }
+                                }
+                        )
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(top = 16.dp, bottom = 32.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
+                            Text(
+                                text = "경기도 부천시 소사구 소사본동 65-7",
+                                style = fontFamily.body1,
+                                fontSize = 14.sp,
+                                color = Color(0xFF4B3621),
+                                textAlign = TextAlign.Center
+                            )
+                            Text(
+                                text = "MJ컨벤션 그랜드볼룸",
+                                style = fontFamily.body1,
+                                fontSize = 14.sp,
+                                color = Color(0xFF4B3621),
+                                textAlign = TextAlign.Center
+                            )
+                        }
                     }
                 }
             }
@@ -295,18 +376,15 @@ fun SvgAnimationContainer(
     isFront: Boolean
 ) {
     val density = LocalDensity.current
-    // 박스 요소의 위치 정보를 저장할 상태 변수
     var svgContent by remember { mutableStateOf("") }
 
     var positionX by remember { mutableStateOf(0f) }
     var positionY by remember { mutableStateOf(0f) }
     var composableWidth by remember { mutableStateOf(0) }
     var composableHeight by remember { mutableStateOf(0) }
-    
-    // SVG 컨테이너 참조
+
     var svgContainer by remember { mutableStateOf<HTMLDivElement?>(null) }
 
-    // SVG 콘텐츠 로드
     LaunchedEffect(isFront, positionX, positionY, composableWidth, composableHeight) {
         try {
             val bytes = Res.readBytes("drawable/wedding_animation.svg")
@@ -334,7 +412,6 @@ fun SvgAnimationContainer(
         modifier = modifier.onSizeChanged { size ->
             composableWidth = size.width.pxToDp(density).toInt()
             composableHeight = size.height.pxToDp(density).toInt()
-            // SVG 컨테이너 위치 업데이트
             svgContainer?.style?.apply {
                 left = "0px"
                 top = "0px"
@@ -384,27 +461,3 @@ fun setupSvgAnimation(isFront: Boolean, svgContent: String, height: Int) {
     }
 }
 
-const val weddingLat = 37.5666805
-const val weddingLng = 126.9784147
-const val zoomLevel = 15
-
-fun setupNaverMap(elementId: String, lat: Double, lng: Double, zoom: Int) {
-    // 지도 컨테이너 요소 가져오기
-    val mapContainer = document.getElementById(elementId) as HTMLDivElement
-    mapContainer.style.display = "block"
-
-    // 지도 초기화 스크립트 생성
-    val script = document.createElement("script") as HTMLScriptElement
-    script.textContent = """
-        var mapOptions = {
-            center: new naver.maps.LatLng($lat, $lng),
-            zoom: $zoom
-        };
-        
-        var map = new naver.maps.Map(document.getElementById('$elementId'), mapOptions);
-       
-    """
-
-    // 스크립트를 문서에 추가
-    document.head?.appendChild(script)
-}

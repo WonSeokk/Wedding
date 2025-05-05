@@ -10,18 +10,117 @@
     <title>Wedding</title>
     <link type="text/css" rel="stylesheet" href="styles.css">
     <script type="text/javascript" src="https://oapi.map.naver.com/openapi/v3/maps.js?ncpKeyId=wxw24lbmdq"></script>
+    <script type="text/javascript">
+        var weddingMap = null;
+        var isMapVisible = false;
+        var lastKnownMapPosition = 0;
+
+        // 지도 초기화 함수
+        function initNaverMap(elementId, lat, lng, zoom) {
+            var mapContainer = document.getElementById(elementId);
+            if (!mapContainer) {
+                // 없으면 생성
+                mapContainer = document.createElement('div');
+                mapContainer.id = elementId;
+                mapContainer.style.position = 'absolute';
+                mapContainer.style.width = '300px';
+                mapContainer.style.height = '300px';
+                mapContainer.style.left = '50%';
+                mapContainer.style.transform = 'translateX(-50%)';
+                mapContainer.style.zIndex = '999';
+                mapContainer.style.display = 'none';
+                document.body.appendChild(mapContainer);
+            }
+
+            var mapOptions = {
+                center: new naver.maps.LatLng(lat, lng),
+                zoom: zoom,
+                zoomControl: false,
+                scaleControl: false,
+                mapDataControl: false,
+                mapTypeControl: false
+            };
+
+            weddingMap = new naver.maps.Map(mapContainer, mapOptions);
+
+            var marker = new naver.maps.Marker({
+                position: new naver.maps.LatLng(lat, lng),
+                map: weddingMap
+            });
+
+            var infoWindow = new naver.maps.InfoWindow({
+                content: '<div style="padding:10px;text-align:center;">원석❤️서영</div>'
+            });
+
+            naver.maps.Event.addListener(marker, 'click', function() {
+                infoWindow.open(weddingMap, marker);
+            });
+
+            window.addEventListener('scroll', checkMapVisibility);
+            window.addEventListener('resize', checkMapVisibility);
+        }
+
+        function registerMapBox(elementId) {
+            var mapBox = document.getElementById('map-box');
+            if (!mapBox) {
+                mapBox = document.createElement('div');
+                mapBox.id = 'map-box';
+                mapBox.style.position = 'fixed';
+                mapBox.style.width = '10px';
+                mapBox.style.height = '10px';
+                mapBox.style.visibility = 'hidden';
+                document.body.appendChild(mapBox);
+            }
+        }
+
+        function showNaverMap(elementId, show, positionY) {
+            console.log("지도 위치 설정:", elementId, show, positionY);
+
+            lastKnownMapPosition = positionY;
+
+            var mapContainer = document.getElementById(elementId);
+            if (!mapContainer) return;
+
+            mapContainer.style.top = positionY + 'px';
+
+            var mapBox = document.getElementById('map-box');
+            if (mapBox) {
+                mapBox.style.visibility = show ? 'visible' : 'hidden';
+                mapBox.style.position = 'absolute';
+                mapBox.style.top = positionY + 'px';
+                mapBox.style.height = '300px';
+                mapBox.style.width = '360px';
+                mapBox.style.left = '50%';
+                mapBox.style.transform = 'translateX(-50%)';
+            }
+
+            checkMapVisibility(show);
+        }
+
+        function checkMapVisibility(show) {
+            if (!weddingMap) return;
+
+            var mapContainer = document.getElementById('map-container');
+            if (!mapContainer) return;
+            var mapBox = document.getElementById('map-box');
+            if (!mapBox) return;
+            mapContainer.style.display = show ? 'block' : 'none';
+            mapContainer.style.height = '300px';
+            mapContainer.style.width = '360px';
+
+            var rect = mapBox.getBoundingClientRect();
+            var windowHeight = window.innerHeight;
+
+            var isVisible = rect.top < windowHeight && rect.bottom > 0;
+
+            setTimeout(function() {
+                naver.maps.Event.trigger(weddingMap, 'resize');
+            }, 100);
+        }
+    </script>
     <script type="application/javascript" src="composeApp.js"></script>
 </head>
 <body>
-<div id="map" style="width:100%;height:400px;"></div>
-
-<script>
-    var mapOptions = {
-        center: new naver.maps.LatLng(37.3595704, 127.105399),
-        zoom: 10
-    };
-
-    var map = new naver.maps.Map('map', mapOptions);
-</script>
+<!-- 맵 컨테이너는 JavaScript에서 동적으로 생성됩니다 -->
 </body>
 </html>
