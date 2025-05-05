@@ -55,9 +55,6 @@
             naver.maps.Event.addListener(marker, 'click', function() {
                 infoWindow.open(weddingMap, marker);
             });
-
-            window.addEventListener('scroll', checkMapVisibility);
-            window.addEventListener('resize', checkMapVisibility);
         }
 
         function registerMapBox(elementId) {
