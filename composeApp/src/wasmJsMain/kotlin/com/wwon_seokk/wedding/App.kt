@@ -196,17 +196,17 @@ private fun Content(
         }
     }
     var positionY by remember { mutableStateOf(0f) }
-    LaunchedEffect(mapPositionY) {
-        mapPositionY?.let { y ->
-            if(y.toFloat() != positionY) {
-                positionY = y.toFloat()
-                println(positionY)
-                showNaverMap("map-container", true, positionY)
-            }
-        } ?: run {
-            showNaverMap("map-container", false, 0f)
-        }
-    }
+//    LaunchedEffect(mapPositionY) {
+//        mapPositionY?.let { y ->
+//            if(y.toFloat() != positionY) {
+//                positionY = y.toFloat()
+//                println(positionY)
+//                showNaverMap("map-container", true, positionY)
+//            }
+//        } ?: run {
+//            showNaverMap("map-container", false, 0f)
+//        }
+//    }
     LazyVerticalStaggeredGrid(
         modifier = Modifier.fillMaxSize(),
         state = listState,
@@ -294,12 +294,6 @@ private fun Content(
             itemsIndexed(
                 key = { i, item -> i },
                 items = items,
-                contentType = { i, item ->
-                    when(i) {
-                        2, 6, 11 -> "1"
-                        else -> "2"
-                    }
-                },
                 span = { i, item -> StaggeredGridItemSpan.SingleLane }
             ) { index, item ->
 //                Image(
@@ -315,17 +309,24 @@ private fun Content(
 //                    contentScale = ContentScale.Crop,
 //                    contentDescription = null
 //                )
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .then(
-                            when (index) {
-                                2, 6, 11 -> Modifier.height(height.dp)
-                                else -> Modifier.aspectRatio(1f)
-                            }
+                when (index) {
+                    2, 6, 11 -> {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(height.dp)
+                                .background(Color.Red)
                         )
-                        .background(Color.Red)
-                )
+                    }
+                    else -> {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .aspectRatio(1f)
+                                .background(Color.Blue)
+                        )
+                    }
+                }
                 Text("$index")
             }
             item(span = StaggeredGridItemSpan.FullLine) {
@@ -410,6 +411,8 @@ fun SvgAnimationContainer(
 
     LaunchedEffect(isFront, positionX, positionY, composableWidth, composableHeight) {
         try {
+            if(composableHeight == 0)
+                return@LaunchedEffect
             if(svgContent == null)
                 svgContent = Res.readBytes("drawable/wedding_animation.svg").decodeToString()
             svgContent?.let {
