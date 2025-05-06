@@ -29,8 +29,10 @@ import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.MutableIntState
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -81,6 +83,7 @@ fun App() {
             registerMapBox("map-box")
             initNaverMap("map-container", weddingLat, weddingLng, zoomLevel)
         }
+        val dimension = remember { mutableIntStateOf(2) }
         val flipController = rememberFlipController()
         var isFront by remember { mutableStateOf(false) }
         var isCoverBackground by remember { mutableStateOf(true) }
@@ -89,7 +92,11 @@ fun App() {
             isCoverBackground = false
         }
         Box(
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier
+                .fillMaxWidth()
+                .onSizeChanged {
+                    dimension.intValue = it.width / window.innerWidth
+                },
             contentAlignment = Alignment.Center
         ) {
             AnimatedVisibility(
@@ -125,7 +132,9 @@ fun App() {
                     Cover(isFront = isFront)
                 },
                 backSide = {
-                    Content()
+                    Content(
+                        dimension = dimension
+                    )
                 },
                 flipController = flipController
             ) { isFront = it != FlippableState.BACK }
@@ -144,12 +153,14 @@ private fun Cover(
             painter = painterResource(Res.drawable.cover),
             contentDescription = null
         )
-//        SvgAnimationContainer(modifier = Modifier.matchParentSize(), isFront = isFront)
+        SvgAnimationContainer(modifier = Modifier.matchParentSize(), isFront = isFront)
     }
 }
 
 @Composable
-private fun Content() {
+private fun Content(
+    dimension: MutableIntState
+) {
     val items = remember {
         listOf(
             Res.drawable.test,
@@ -176,8 +187,8 @@ private fun Content() {
     val listState = rememberLazyStaggeredGridState()
     val mapPositionY by remember {
         derivedStateOf {
-            listState.layoutInfo.visibleItemsInfo.find { it.key == "test" }?.let {
-                it.offset.y / 2
+            listState.layoutInfo.visibleItemsInfo.find { it.key == "map" }?.let {
+                it.offset.y / dimension.intValue
             }
         }
     }
@@ -326,7 +337,7 @@ private fun Content() {
                 }
             }
             item(
-                key = "test",
+                key = "map",
                 span = StaggeredGridItemSpan.FullLine
             ) {
                 Box(
@@ -357,6 +368,11 @@ private fun Content() {
                         color = Color(0xFF4B3621),
                         textAlign = TextAlign.Center
                     )
+                }
+            }
+            if(dimension.intValue > 2) {
+                item(span = StaggeredGridItemSpan.FullLine) {
+                    Spacer(modifier = Modifier.height(100.dp * (dimension.intValue - 2)))
                 }
             }
         }

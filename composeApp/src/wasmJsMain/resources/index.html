@@ -63,9 +63,11 @@
             if (!mapBox) {
                 mapBox = document.createElement('div');
                 mapBox.id = 'map-box';
-                mapBox.style.position = 'fixed';
-                mapBox.style.width = '10px';
-                mapBox.style.height = '10px';
+                mapBox.style.position = 'absolute';
+                mapBox.style.height = '300px';
+                mapBox.style.width = '360px';
+                mapBox.style.left = '50%';
+                mapBox.style.transform = 'translateX(-50%)';
                 mapBox.style.visibility = 'hidden';
                 document.body.appendChild(mapBox);
             }
@@ -84,12 +86,7 @@
             var mapBox = document.getElementById('map-box');
             if (mapBox) {
                 mapBox.style.visibility = show ? 'visible' : 'hidden';
-                mapBox.style.position = 'absolute';
                 mapBox.style.top = positionY + 'px';
-                mapBox.style.height = '300px';
-                mapBox.style.width = '360px';
-                mapBox.style.left = '50%';
-                mapBox.style.transform = 'translateX(-50%)';
             }
 
             checkMapVisibility(show);

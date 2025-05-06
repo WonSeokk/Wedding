@@ -18,10 +18,6 @@ import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.zIndex
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.MutableSharedFlow
-import kotlinx.coroutines.flow.asSharedFlow
-import kotlinx.coroutines.flow.launchIn
-import kotlinx.coroutines.flow.onEach
 
 @Composable
 fun Flippable(
@@ -49,14 +45,10 @@ fun Flippable(
         flipEnabled = flipEnabled
     )
 
-    LaunchedEffect(key1 = flipController, block = {
-        flipController.flipRequests
-            .onEach {
-                prevViewState = flippableState
-                flippableState = it
-            }
-            .launchIn(this)
-    })
+    LaunchedEffect(flipController.currentSide) {
+        prevViewState = flippableState
+        flippableState = flipController.currentSide
+    }
 
     val flipCall: () -> Unit = {
         if (transition.isRunning.not() && flipEnabled) {
@@ -263,42 +255,22 @@ fun Flippable(
 
 class FlippableController {
 
-    private val _flipRequests = MutableSharedFlow<FlippableState>(extraBufferCapacity = 1)
-    internal val flipRequests = _flipRequests.asSharedFlow()
-
-    private var _currentSide: FlippableState = FlippableState.FRONT
+    var currentSide: FlippableState by mutableStateOf(FlippableState.FRONT)
     private var _flipEnabled: Boolean = true
 
     fun flipToFront() {
         flip(FlippableState.FRONT)
     }
 
-    /**
-     * Flips the view to the [FlippableState.BACK] side
-     */
     fun flipToBack() {
         flip(FlippableState.BACK)
     }
 
-    /**
-     * Flips the view to the passed [flippableState]
-     * @param flippableState The side to flip the view to.
-     */
     fun flip(flippableState: FlippableState) {
         if (_flipEnabled.not())
             return
 
-        _currentSide = flippableState
-        _flipRequests.tryEmit(flippableState)
-    }
-
-    /**
-     * Flips the view to the other side. If it's [FlippableState.FRONT] it goes to [FlippableState.BACK] and vice-versa
-     */
-    fun flip() {
-        if (_currentSide == FlippableState.FRONT)
-            flipToBack()
-        else flipToFront()
+        currentSide = flippableState
     }
 
     internal fun setConfig(
@@ -321,28 +293,9 @@ enum class FlippableState {
     BACK
 }
 
-/**
- * An Enum class for animation type of [Flippable]. It has these 4 states:
- * [HORIZONTAL_CLOCKWISE], [HORIZONTAL_ANTI_CLOCKWISE], [VERTICAL_CLOCKWISE], and [VERTICAL_ANTI_CLOCKWISE]
- */
 enum class FlipAnimationType {
-    /**
-     * Rotates the [Flippable] horizontally in the clockwise direction
-     */
     HORIZONTAL_CLOCKWISE,
-
-    /**
-     * Rotates the [Flippable] horizontally in the anti-clockwise direction
-     */
     HORIZONTAL_ANTI_CLOCKWISE,
-
-    /**
-     * Rotates the [Flippable] vertically in the clockwise direction
-     */
     VERTICAL_CLOCKWISE,
-
-    /**
-     * Rotates the [Flippable] vertically in the anti-clockwise direction
-     */
     VERTICAL_ANTI_CLOCKWISE
 }
