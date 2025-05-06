@@ -81,7 +81,6 @@ fun App() {
             registerMapBox("map-box")
             initNaverMap("map-container", weddingLat, weddingLng, zoomLevel)
         }
-
         val flipController = rememberFlipController()
         var isFront by remember { mutableStateOf(false) }
         var isCoverBackground by remember { mutableStateOf(true) }
@@ -145,7 +144,7 @@ private fun Cover(
             painter = painterResource(Res.drawable.cover),
             contentDescription = null
         )
-        SvgAnimationContainer(modifier = Modifier.matchParentSize(), isFront = isFront)
+//        SvgAnimationContainer(modifier = Modifier.matchParentSize(), isFront = isFront)
     }
 }
 
@@ -172,7 +171,8 @@ private fun Content() {
                 Res.drawable.test
             )
     }
-    val height = remember(window.innerWidth) { minOf(window.innerWidth * 265 / 400, 265) }
+
+    val height = remember { minOf(window.innerWidth * 265 / 400, 265) }
     val listState = rememberLazyStaggeredGridState()
     val mapPositionY by remember {
         derivedStateOf {
@@ -245,7 +245,10 @@ private fun Content() {
                     )
                 }
             }
-            item(span = StaggeredGridItemSpan.FullLine) {
+            item(
+                contentType = "title",
+                span = StaggeredGridItemSpan.FullLine
+            ) {
                 Column(
                     modifier = Modifier
                         .padding(bottom = 20.dp)
@@ -277,12 +280,14 @@ private fun Content() {
             itemsIndexed(
                 key = { i, item -> i },
                 items = items,
+                contentType = { i, item ->
+                    when(i) {
+                        2, 6, 11 -> "1"
+                        else -> "2"
+                    }
+                },
                 span = { i, item -> StaggeredGridItemSpan.SingleLane }
             ) { index, item ->
-//                var isVisible by remember { mutableStateOf(false) }
-//                LaunchedEffect(Unit) {
-//                    isVisible = true
-//                }
                 Image(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -324,11 +329,6 @@ private fun Content() {
                 key = "test",
                 span = StaggeredGridItemSpan.FullLine
             ) {
-                DisposableEffect(Unit) {
-                    onDispose {
-                        showNaverMap("map-container", false, 0f)
-                    }
-                }
                 Box(
                     modifier = Modifier
                         .width(360.dp)
