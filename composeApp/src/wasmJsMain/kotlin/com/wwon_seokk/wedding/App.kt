@@ -25,11 +25,13 @@ import androidx.compose.foundation.lazy.staggeredgrid.LazyVerticalStaggeredGrid
 import androidx.compose.foundation.lazy.staggeredgrid.StaggeredGridCells
 import androidx.compose.foundation.lazy.staggeredgrid.StaggeredGridItemSpan
 import androidx.compose.foundation.lazy.staggeredgrid.itemsIndexed
+import androidx.compose.foundation.lazy.staggeredgrid.rememberLazyStaggeredGridState
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -173,8 +175,29 @@ private fun Content() {
             )
     }
     val height = remember(window.innerWidth) { minOf(window.innerWidth * 265 / 400, 265) }
+    val listState = rememberLazyStaggeredGridState()
+    val mapPositionY by remember {
+        derivedStateOf {
+            listState.layoutInfo.visibleItemsInfo.find { it.key == "test" }?.let {
+                it.offset.y / 2
+            }
+        }
+    }
+    var positionY by remember { mutableStateOf(0f) }
+    LaunchedEffect(mapPositionY) {
+        mapPositionY?.let { y ->
+            if(y.toFloat() != positionY) {
+                positionY = y.toFloat()
+                println(positionY)
+                showNaverMap("map-container", true, positionY)
+            }
+        } ?: run {
+            showNaverMap("map-container", false, 0f)
+        }
+    }
     LazyVerticalStaggeredGrid(
         modifier = Modifier.fillMaxSize(),
+        state = listState,
         columns = StaggeredGridCells.Fixed(3),
         verticalItemSpacing = 2.dp,
         horizontalArrangement = Arrangement.spacedBy(2.dp),
@@ -282,68 +305,64 @@ private fun Content() {
                 Text("$index")
             }
             item(span = StaggeredGridItemSpan.FullLine) {
-                var positionY by remember { mutableStateOf(0f) }
+                Row(
+                    modifier = Modifier
+                        .padding(horizontal = 40.dp, vertical = 20.dp)
+                        .fillMaxWidth()
+                ) {
+                    Text(
+                        text = "오시는 길",
+                        style = fontFamily.h2,
+                        fontSize = 16.sp,
+                        color = Color(0xFFB76E79),
+                        textAlign = TextAlign.Center
+                    )
+                    Spacer(modifier = Modifier.weight(1f))
+                    Text(
+                        text = "―――――――――――",
+                        style = fontFamily.h2,
+                        fontSize = 16.sp,
+                        color = Color(0xFFCFA8A8)
+                    )
+                }
+            }
+            item(
+                key = "test",
+                span = StaggeredGridItemSpan.FullLine
+            ) {
                 DisposableEffect(Unit) {
                     onDispose {
                         showNaverMap("map-container", false, 0f)
                     }
                 }
-                Column(modifier = Modifier.fillMaxWidth()) {
-                    Row(
-                        modifier = Modifier
-                            .padding(horizontal = 40.dp, vertical = 20.dp)
-                            .fillMaxWidth()
-                    ) {
-                        Text(
-                            text = "오시는 길",
-                            style = fontFamily.h2,
-                            fontSize = 16.sp,
-                            color = Color(0xFFB76E79),
-                            textAlign = TextAlign.Center
-                        )
-                        Spacer(modifier = Modifier.weight(1f))
-                        Text(
-                            text = "―――――――――――",
-                            style = fontFamily.h2,
-                            fontSize = 16.sp,
-                            color = Color(0xFFCFA8A8)
-                        )
-                    }
-                    Box(
-                        modifier = Modifier
-                            .width(360.dp)
-                            .height(300.dp)
-                            .padding(horizontal = 20.dp)
-                            .onGloballyPositioned { coordinates ->
-                                val position = coordinates.positionInRoot()
-                                if (position.y != positionY) {
-                                    positionY = position.y
-                                    val calY = 460 - (855 - window.innerHeight.toFloat())
-                                    showNaverMap("map-container", true, positionY - calY)
-                                }
-                            }
+                Box(
+                    modifier = Modifier
+                        .width(360.dp)
+                        .height(300.dp)
+                        .padding(horizontal = 20.dp)
+                )
+            }
+            item(span = StaggeredGridItemSpan.FullLine) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 16.dp, bottom = 32.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Text(
+                        text = "경기도 부천시 소사구 소사본동 65-7",
+                        style = fontFamily.body1,
+                        fontSize = 14.sp,
+                        color = Color(0xFF4B3621),
+                        textAlign = TextAlign.Center
                     )
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(top = 16.dp, bottom = 32.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally
-                    ) {
-                        Text(
-                            text = "경기도 부천시 소사구 소사본동 65-7",
-                            style = fontFamily.body1,
-                            fontSize = 14.sp,
-                            color = Color(0xFF4B3621),
-                            textAlign = TextAlign.Center
-                        )
-                        Text(
-                            text = "MJ컨벤션 그랜드볼룸",
-                            style = fontFamily.body1,
-                            fontSize = 14.sp,
-                            color = Color(0xFF4B3621),
-                            textAlign = TextAlign.Center
-                        )
-                    }
+                    Text(
+                        text = "MJ컨벤션 그랜드볼룸",
+                        style = fontFamily.body1,
+                        fontSize = 14.sp,
+                        color = Color(0xFF4B3621),
+                        textAlign = TextAlign.Center
+                    )
                 }
             }
         }
