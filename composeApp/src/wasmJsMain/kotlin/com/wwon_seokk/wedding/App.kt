@@ -127,19 +127,28 @@ fun App() {
                     contentDescription = null
                 )
             }
-            Flippable(
+            Box(
                 modifier = Modifier
                     .width(400.dp)
                     .fillMaxHeight()
-                    .align(Alignment.Center),
-                frontSide = {
-                    Cover(isFront = isFront)
-                },
-                backSide = {
-                    Content(dimension = dimension)
-                },
-                flipController = flipController
-            ) { isFront = it != FlippableState.BACK }
+                    .align(Alignment.Center)
+            ) {
+                Content(dimension = dimension)
+            }
+
+//            Flippable(
+//                modifier = Modifier
+//                    .width(400.dp)
+//                    .fillMaxHeight()
+//                    .align(Alignment.Center),
+//                frontSide = {
+//                    Cover(isFront = isFront)
+//                },
+//                backSide = {
+//                    Content(dimension = dimension)
+//                },
+//                flipController = flipController
+//            ) { isFront = it != FlippableState.BACK }
         }
     }
 }
@@ -196,17 +205,17 @@ private fun Content(
         }
     }
     var positionY by remember { mutableStateOf(0f) }
-//    LaunchedEffect(mapPositionY) {
-//        mapPositionY?.let { y ->
-//            if(y.toFloat() != positionY) {
-//                positionY = y.toFloat()
-//                println(positionY)
-//                showNaverMap("map-container", true, positionY)
-//            }
-//        } ?: run {
-//            showNaverMap("map-container", false, 0f)
-//        }
-//    }
+    LaunchedEffect(mapPositionY) {
+        mapPositionY?.let { y ->
+            if(y.toFloat() != positionY) {
+                positionY = y.toFloat()
+                println(positionY)
+                showNaverMap("map-container", true, positionY)
+            }
+        } ?: run {
+            showNaverMap("map-container", false, 0f)
+        }
+    }
     LazyVerticalStaggeredGrid(
         modifier = Modifier.fillMaxSize(),
         state = listState,

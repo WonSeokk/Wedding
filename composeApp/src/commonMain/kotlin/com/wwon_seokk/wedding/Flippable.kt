@@ -27,7 +27,6 @@ fun Flippable(
     modifier: Modifier = Modifier,
     contentAlignment: Alignment = Alignment.Center,
     flipDurationMs: Int = 800,
-    flipOnTouch: Boolean = false,
     flipEnabled: Boolean = true,
     autoFlip: Boolean = true,
     autoFlipDurationMs: Int = 3800,
@@ -205,15 +204,7 @@ fun Flippable(
     }
 
     Box(
-        modifier = modifier
-            .clickable(
-                enabled = flipOnTouch,
-                onClick = {
-                    flipCall()
-                },
-                interactionSource = remember { MutableInteractionSource() },
-                indication = null
-            ),
+        modifier = modifier,
         contentAlignment = contentAlignment
     ) {
 
