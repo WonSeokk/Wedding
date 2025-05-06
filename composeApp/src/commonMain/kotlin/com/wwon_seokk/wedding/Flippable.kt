@@ -65,9 +65,7 @@ fun Flippable(
             flippableState = FlippableState.FRONT
             return@LaunchedEffect
         }
-        println("flip ${prevViewState != FlippableState.INITIALIZED && transition.currentState == flippableState}")
         onFlippedListener.invoke(flippableState)
-
         if (autoFlip && flippableState != FlippableState.BACK) {
             delay(autoFlipDurationMs.toLong())
             flipCall()

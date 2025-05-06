@@ -39,6 +39,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.FilterQuality
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.onSizeChanged
@@ -47,6 +48,8 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import coil3.compose.AsyncImage
+import coil3.compose.rememberAsyncImagePainter
 import kotlinx.browser.document
 import kotlinx.browser.window
 import kotlinx.coroutines.delay
@@ -85,7 +88,7 @@ fun App() {
         }
         val dimension = remember { mutableIntStateOf(2) }
         val flipController = rememberFlipController()
-        var isFront by remember { mutableStateOf(false) }
+        var isFront by remember { mutableStateOf(true) }
         var isCoverBackground by remember { mutableStateOf(true) }
         LaunchedEffect(Unit) {
             delay(3800)
@@ -132,9 +135,7 @@ fun App() {
                     Cover(isFront = isFront)
                 },
                 backSide = {
-                    Content(
-                        dimension = dimension
-                    )
+                    Content(dimension = dimension)
                 },
                 flipController = flipController
             ) { isFront = it != FlippableState.BACK }
@@ -157,6 +158,7 @@ private fun Cover(
     }
 }
 
+@OptIn(ExperimentalResourceApi::class)
 @Composable
 private fun Content(
     dimension: MutableIntState
@@ -194,15 +196,14 @@ private fun Content(
     }
     var positionY by remember { mutableStateOf(0f) }
     LaunchedEffect(mapPositionY) {
-        mapPositionY?.let { y ->
-            if(y.toFloat() != positionY) {
-                positionY = y.toFloat()
-                println(positionY)
-                showNaverMap("map-container", true, positionY)
-            }
-        } ?: run {
-            showNaverMap("map-container", false, 0f)
-        }
+//        mapPositionY?.let { y ->
+//            if(y.toFloat() != positionY) {
+//                positionY = y.toFloat()
+//                showNaverMap("map-container", true, positionY)
+//            }
+//        } ?: run {
+//            showNaverMap("map-container", false, 0f)
+//        }
     }
     LazyVerticalStaggeredGrid(
         modifier = Modifier.fillMaxSize(),
@@ -386,20 +387,21 @@ fun SvgAnimationContainer(
     isFront: Boolean
 ) {
     val density = LocalDensity.current
-    var svgContent by remember { mutableStateOf("") }
+    var svgContent: String? by remember { mutableStateOf(null) }
 
     var positionX by remember { mutableStateOf(0f) }
     var positionY by remember { mutableStateOf(0f) }
     var composableWidth by remember { mutableStateOf(0) }
     var composableHeight by remember { mutableStateOf(0) }
-
     var svgContainer by remember { mutableStateOf<HTMLDivElement?>(null) }
 
     LaunchedEffect(isFront, positionX, positionY, composableWidth, composableHeight) {
         try {
-            val bytes = Res.readBytes("drawable/wedding_animation.svg")
-            svgContent = bytes.decodeToString()
-            setupSvgAnimation(isFront, svgContent, composableHeight)
+            if(svgContent == null)
+                svgContent = Res.readBytes("drawable/wedding_animation.svg").decodeToString()
+            svgContent?.let {
+                setupSvgAnimation(isFront, it, composableHeight)
+            }
         } catch (e: Exception) {
             println("SVG 로드 중 오류 발생: ${e.message}")
         }
