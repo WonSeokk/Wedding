@@ -3,8 +3,6 @@ package com.wwon_seokk.wedding
 import Flippable
 import FlippableState
 import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.core.Spring
-import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -288,11 +286,7 @@ private fun Content() {
                 Image(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .animateItem(
-                            fadeInSpec = tween(durationMillis = 250),
-                            fadeOutSpec = tween(durationMillis = 100),
-                            placementSpec = spring(stiffness = Spring.StiffnessLow, dampingRatio = Spring.DampingRatioMediumBouncy)
-                        ).then(
+                        .then(
                             when (index) {
                                 2, 6, 11 -> Modifier.height(height.dp)
                                 else -> Modifier.aspectRatio(1f)
