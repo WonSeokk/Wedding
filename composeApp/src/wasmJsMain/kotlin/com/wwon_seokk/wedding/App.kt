@@ -7,6 +7,7 @@ import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -196,14 +197,15 @@ private fun Content(
     }
     var positionY by remember { mutableStateOf(0f) }
     LaunchedEffect(mapPositionY) {
-//        mapPositionY?.let { y ->
-//            if(y.toFloat() != positionY) {
-//                positionY = y.toFloat()
-//                showNaverMap("map-container", true, positionY)
-//            }
-//        } ?: run {
-//            showNaverMap("map-container", false, 0f)
-//        }
+        mapPositionY?.let { y ->
+            if(y.toFloat() != positionY) {
+                positionY = y.toFloat()
+                println(positionY)
+                showNaverMap("map-container", true, positionY)
+            }
+        } ?: run {
+            showNaverMap("map-container", false, 0f)
+        }
     }
     LazyVerticalStaggeredGrid(
         modifier = Modifier.fillMaxSize(),
@@ -300,7 +302,20 @@ private fun Content(
                 },
                 span = { i, item -> StaggeredGridItemSpan.SingleLane }
             ) { index, item ->
-                Image(
+//                Image(
+//                    modifier = Modifier
+//                        .fillMaxWidth()
+//                        .then(
+//                            when (index) {
+//                                2, 6, 11 -> Modifier.height(height.dp)
+//                                else -> Modifier.aspectRatio(1f)
+//                            }
+//                        ),
+//                    painter = painterResource(item),
+//                    contentScale = ContentScale.Crop,
+//                    contentDescription = null
+//                )
+                Box(
                     modifier = Modifier
                         .fillMaxWidth()
                         .then(
@@ -308,10 +323,8 @@ private fun Content(
                                 2, 6, 11 -> Modifier.height(height.dp)
                                 else -> Modifier.aspectRatio(1f)
                             }
-                        ),
-                    painter = painterResource(item),
-                    contentScale = ContentScale.Crop,
-                    contentDescription = null
+                        )
+                        .background(Color.Red)
                 )
                 Text("$index")
             }
