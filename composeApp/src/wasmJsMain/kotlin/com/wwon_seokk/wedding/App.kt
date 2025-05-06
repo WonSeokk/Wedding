@@ -172,6 +172,7 @@ private fun Content() {
                 Res.drawable.test
             )
     }
+    val height = remember(window.innerWidth) { minOf(window.innerWidth * 265 / 400, 265) }
     LazyVerticalStaggeredGrid(
         modifier = Modifier.fillMaxSize(),
         columns = StaggeredGridCells.Fixed(3),
@@ -257,111 +258,91 @@ private fun Content() {
                 items = items,
                 span = { i, item -> StaggeredGridItemSpan.SingleLane }
             ) { index, item ->
-                var isVisible by remember { mutableStateOf(false) }
-                val height = remember(window.innerWidth) { minOf(window.innerWidth * 265 / 400, 265) }
-                LaunchedEffect(Unit) {
-                    isVisible = true
-                }
-                AnimatedVisibility(
-                    visible = isVisible,
-                    enter = fadeIn(animationSpec = tween(durationMillis = 1500)),
-                    exit = fadeOut(animationSpec = tween(durationMillis = 1500))
-                ) {
-
-                    Image(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .animateItem(
-                                fadeInSpec = tween(durationMillis = 250),
-                                fadeOutSpec = tween(durationMillis = 100),
-                                placementSpec = spring(stiffness = Spring.StiffnessLow, dampingRatio = Spring.DampingRatioMediumBouncy)
-                            ).then(
-                                when (index) {
-                                    2, 6, 11 -> Modifier.height(height.dp)
-                                    else -> Modifier.aspectRatio(1f)
-                                }
-                            ),
-                        painter = painterResource(item),
-                        contentScale = ContentScale.Crop,
-                        contentDescription = null
-                    )
-                    Text("$index")
-                }
+//                var isVisible by remember { mutableStateOf(false) }
+//                LaunchedEffect(Unit) {
+//                    isVisible = true
+//                }
+                Image(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .animateItem(
+                            fadeInSpec = tween(durationMillis = 250),
+                            fadeOutSpec = tween(durationMillis = 100),
+                            placementSpec = spring(stiffness = Spring.StiffnessLow, dampingRatio = Spring.DampingRatioMediumBouncy)
+                        ).then(
+                            when (index) {
+                                2, 6, 11 -> Modifier.height(height.dp)
+                                else -> Modifier.aspectRatio(1f)
+                            }
+                        ),
+                    painter = painterResource(item),
+                    contentScale = ContentScale.Crop,
+                    contentDescription = null
+                )
+                Text("$index")
             }
             item(span = StaggeredGridItemSpan.FullLine) {
-                var isVisible by remember { mutableStateOf(false) }
                 var positionY by remember { mutableStateOf(0f) }
-
-                LaunchedEffect(Unit) {
-                    isVisible = true
-                }
                 DisposableEffect(Unit) {
                     onDispose {
                         showNaverMap("map-container", false, 0f)
                     }
                 }
-
-                AnimatedVisibility(
-                    visible = isVisible,
-                    enter = fadeIn(animationSpec = tween(durationMillis = 1500)),
-                    exit = fadeOut(animationSpec = tween(durationMillis = 1500))
-                ) {
-                    Column(modifier = Modifier.fillMaxWidth()) {
-                        Row(
-                            modifier = Modifier
-                                .padding(horizontal = 40.dp, vertical = 20.dp)
-                                .fillMaxWidth()
-                        ) {
-                            Text(
-                                text = "오시는 길",
-                                style = fontFamily.h2,
-                                fontSize = 16.sp,
-                                color = Color(0xFFB76E79),
-                                textAlign = TextAlign.Center
-                            )
-                            Spacer(modifier = Modifier.weight(1f))
-                            Text(
-                                text = "―――――――――――",
-                                style = fontFamily.h2,
-                                fontSize = 16.sp,
-                                color = Color(0xFFCFA8A8)
-                            )
-                        }
-                        Box(
-                            modifier = Modifier
-                                .width(360.dp)
-                                .height(300.dp)
-                                .padding(horizontal = 20.dp)
-                                .onGloballyPositioned { coordinates ->
-                                    val position = coordinates.positionInRoot()
-                                    if (position.y != positionY) {
-                                        positionY = position.y
-                                        val calY = 460 - (855 - window.innerHeight.toFloat())
-                                        showNaverMap("map-container", true, positionY - calY)
-                                    }
-                                }
+                Column(modifier = Modifier.fillMaxWidth()) {
+                    Row(
+                        modifier = Modifier
+                            .padding(horizontal = 40.dp, vertical = 20.dp)
+                            .fillMaxWidth()
+                    ) {
+                        Text(
+                            text = "오시는 길",
+                            style = fontFamily.h2,
+                            fontSize = 16.sp,
+                            color = Color(0xFFB76E79),
+                            textAlign = TextAlign.Center
                         )
-                        Column(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(top = 16.dp, bottom = 32.dp),
-                            horizontalAlignment = Alignment.CenterHorizontally
-                        ) {
-                            Text(
-                                text = "경기도 부천시 소사구 소사본동 65-7",
-                                style = fontFamily.body1,
-                                fontSize = 14.sp,
-                                color = Color(0xFF4B3621),
-                                textAlign = TextAlign.Center
-                            )
-                            Text(
-                                text = "MJ컨벤션 그랜드볼룸",
-                                style = fontFamily.body1,
-                                fontSize = 14.sp,
-                                color = Color(0xFF4B3621),
-                                textAlign = TextAlign.Center
-                            )
-                        }
+                        Spacer(modifier = Modifier.weight(1f))
+                        Text(
+                            text = "―――――――――――",
+                            style = fontFamily.h2,
+                            fontSize = 16.sp,
+                            color = Color(0xFFCFA8A8)
+                        )
+                    }
+                    Box(
+                        modifier = Modifier
+                            .width(360.dp)
+                            .height(300.dp)
+                            .padding(horizontal = 20.dp)
+                            .onGloballyPositioned { coordinates ->
+                                val position = coordinates.positionInRoot()
+                                if (position.y != positionY) {
+                                    positionY = position.y
+                                    val calY = 460 - (855 - window.innerHeight.toFloat())
+                                    showNaverMap("map-container", true, positionY - calY)
+                                }
+                            }
+                    )
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(top = 16.dp, bottom = 32.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Text(
+                            text = "경기도 부천시 소사구 소사본동 65-7",
+                            style = fontFamily.body1,
+                            fontSize = 14.sp,
+                            color = Color(0xFF4B3621),
+                            textAlign = TextAlign.Center
+                        )
+                        Text(
+                            text = "MJ컨벤션 그랜드볼룸",
+                            style = fontFamily.body1,
+                            fontSize = 14.sp,
+                            color = Color(0xFF4B3621),
+                            textAlign = TextAlign.Center
+                        )
                     }
                 }
             }
