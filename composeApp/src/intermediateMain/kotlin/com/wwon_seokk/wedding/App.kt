@@ -38,26 +38,20 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.FilterQuality
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.onSizeChanged
-import androidx.compose.ui.layout.positionInRoot
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import coil3.compose.AsyncImage
-import coil3.compose.rememberAsyncImagePainter
-import kotlinx.browser.document
-import kotlinx.browser.window
+import kotlin.js.JsName
 import kotlinx.coroutines.delay
 import org.jetbrains.compose.resources.ExperimentalResourceApi
 import org.jetbrains.compose.resources.painterResource
-import org.w3c.dom.HTMLDivElement
-import pxToDp
 import rememberFlipController
 import wedding.composeapp.generated.resources.Res
 import wedding.composeapp.generated.resources.content_background
@@ -79,15 +73,24 @@ const val weddingLat = 37.481504867692
 const val weddingLng = 126.79853505353
 const val zoomLevel = 16
 
-@OptIn(ExperimentalResourceApi::class)
+@OptIn(ExperimentalResourceApi::class, ExperimentalComposeUiApi::class)
 @Composable
-fun App() {
+fun App(
+    innerWidth: Int
+) {
     MaterialTheme {
+        val screenWidth = with(LocalDensity.current) {
+            LocalWindowInfo.current.containerSize.width
+        }
+        val screenHeight = with(LocalDensity.current) {
+            LocalWindowInfo.current.containerSize.height
+        }
         LaunchedEffect(Unit) {
             registerMapBox("map-box")
             initNaverMap("map-container", weddingLat, weddingLng, zoomLevel)
         }
         val dimension = remember { mutableIntStateOf(2) }
+        val boxWidth = remember { mutableIntStateOf(0) }
         val flipController = rememberFlipController()
         var isFront by remember { mutableStateOf(true) }
         var isCoverBackground by remember { mutableStateOf(true) }
@@ -95,11 +98,17 @@ fun App() {
             delay(3800)
             isCoverBackground = false
         }
+        LaunchedEffect(innerWidth, boxWidth.intValue) {
+            if(innerWidth > 0 && boxWidth.intValue > 0) {
+                println("${boxWidth.intValue} - $innerWidth")
+                dimension.intValue = boxWidth.intValue / innerWidth
+            }
+        }
         Box(
             modifier = Modifier
                 .fillMaxWidth()
                 .onSizeChanged {
-                    dimension.intValue = it.width / window.innerWidth
+                    boxWidth.intValue = it.width
                 },
             contentAlignment = Alignment.Center
         ) {
@@ -155,11 +164,11 @@ private fun Cover(
             painter = painterResource(Res.drawable.cover),
             contentDescription = null
         )
-        SvgAnimationContainer(modifier = Modifier.matchParentSize(), isFront = isFront)
+//        SvgAnimationContainer(modifier = Modifier.matchParentSize(), isFront = isFront)
     }
 }
 
-@OptIn(ExperimentalResourceApi::class)
+@OptIn(ExperimentalResourceApi::class, ExperimentalComposeUiApi::class)
 @Composable
 private fun Content(
     dimension: MutableIntState
@@ -185,28 +194,31 @@ private fun Content(
                 Res.drawable.test
             )
     }
-
-    val height = remember { minOf(window.innerWidth * 265 / 400, 265) }
+    val screenWidth = with(LocalDensity.current) {
+        LocalWindowInfo.current.containerSize.width
+    }
+    val height = remember(screenWidth) { minOf(screenWidth * 265 / 400, 265) }
     val listState = rememberLazyStaggeredGridState()
     val mapPositionY by remember {
         derivedStateOf {
             listState.layoutInfo.visibleItemsInfo.find { it.key == "map" }?.let {
+                println(dimension.intValue)
                 it.offset.y / dimension.intValue
             }
         }
     }
     var positionY by remember { mutableStateOf(0f) }
-//    LaunchedEffect(mapPositionY) {
-//        mapPositionY?.let { y ->
-//            if(y.toFloat() != positionY) {
-//                positionY = y.toFloat()
-//                println(positionY)
-//                showNaverMap("map-container", true, positionY)
-//            }
-//        } ?: run {
-//            showNaverMap("map-container", false, 0f)
-//        }
-//    }
+    LaunchedEffect(mapPositionY) {
+        mapPositionY?.let { y ->
+            if(y.toFloat() != positionY) {
+                positionY = y.toFloat()
+                println(positionY)
+                showNaverMap("map-container", true, positionY)
+            }
+        } ?: run {
+            showNaverMap("map-container", false, 0f)
+        }
+    }
     LazyVerticalStaggeredGrid(
         modifier = Modifier.fillMaxSize(),
         state = listState,
@@ -394,98 +406,98 @@ private fun Content(
     )
 }
 
-@OptIn(ExperimentalResourceApi::class)
-@Composable
-fun SvgAnimationContainer(
-    modifier: Modifier = Modifier,
-    isFront: Boolean
-) {
-    val density = LocalDensity.current
-    var svgContent: String? by remember { mutableStateOf(null) }
-
-    var positionX by remember { mutableStateOf(0f) }
-    var positionY by remember { mutableStateOf(0f) }
-    var composableWidth by remember { mutableStateOf(0) }
-    var composableHeight by remember { mutableStateOf(0) }
-    var svgContainer by remember { mutableStateOf<HTMLDivElement?>(null) }
-
-    LaunchedEffect(isFront, positionX, positionY, composableWidth, composableHeight) {
-        try {
-            if(composableHeight == 0)
-                return@LaunchedEffect
-            if(svgContent == null)
-                svgContent = Res.readBytes("drawable/wedding_animation.svg").decodeToString()
-            svgContent?.let {
-                setupSvgAnimation(isFront, it, composableHeight)
-            }
-        } catch (e: Exception) {
-            println("SVG 로드 중 오류 발생: ${e.message}")
-        }
-    }
-
-    DisposableEffect(Unit) {
-        document.getElementById("svg-animation-container")?.let {
-            it.parentNode?.removeChild(it)
-        }
-        val container = document.createElement("div") as HTMLDivElement
-        container.id = "svg-animation-container"
-        document.body?.appendChild(container)
-        svgContainer = container
-
-        onDispose {
-            container.parentNode?.removeChild(container)
-        }
-    }
-    Box(
-        modifier = modifier.onSizeChanged { size ->
-            composableWidth = size.width.pxToDp(density).toInt()
-            composableHeight = size.height.pxToDp(density).toInt()
-            svgContainer?.style?.apply {
-                left = "0px"
-                top = "0px"
-                width = "${composableWidth}px"
-                height = "${composableHeight}px"
-            }
-        }.onGloballyPositioned { coordinates ->
-            val position = coordinates.positionInRoot()
-            positionX = position.x
-            positionY = position.y
-        }
-    )
-}
-
-fun setupSvgAnimation(isFront: Boolean, svgContent: String, height: Int) {
-    try {
-        var container = document.getElementById("svg-animation-container") as? HTMLDivElement
-        container?.remove()
-        if(isFront.not())
-            return
-        container = document.createElement("div") as HTMLDivElement
-        container.id = "svg-animation-container"
-
-        container.style.position = "absolute"
-        container.style.top = "0px"
-        container.style.left = "50%"
-        container.style.transform = "translateX(-50%)"
-        container.style.width = "400px"
-        container.style.height = "${height}px"
-        container.style.zIndex = "100"
-
-        document.body?.appendChild(container)
-        container.innerHTML = svgContent
-        var svgContainer = document.getElementById("Layer_1") as? HTMLDivElement
-        svgContainer?.style?.apply {
-            this.position = "absolute"
-            this.top = "0px"
-            this.left = "50%"
-            this.transform = "translateX(-50%)"
-            this.width = "400px"
-            this.height = "${height}px"
-            this.zIndex = "100"
-        }
-        
-    } catch (e: Exception) {
-        println("SVG 애니메이션 설정 중 오류 발생: ${e.message}")
-    }
-}
+//@OptIn(ExperimentalResourceApi::class)
+//@Composable
+//fun SvgAnimationContainer(
+//    modifier: Modifier = Modifier,
+//    isFront: Boolean
+//) {
+//    val density = LocalDensity.current
+//    var svgContent: String? by remember { mutableStateOf(null) }
+//
+//    var positionX by remember { mutableStateOf(0f) }
+//    var positionY by remember { mutableStateOf(0f) }
+//    var composableWidth by remember { mutableStateOf(0) }
+//    var composableHeight by remember { mutableStateOf(0) }
+//    var svgContainer by remember { mutableStateOf<HTMLDivElement?>(null) }
+//
+//    LaunchedEffect(isFront, positionX, positionY, composableWidth, composableHeight) {
+//        try {
+//            if(composableHeight == 0)
+//                return@LaunchedEffect
+//            if(svgContent == null)
+//                svgContent = Res.readBytes("drawable/wedding_animation.svg").decodeToString()
+//            svgContent?.let {
+//                setupSvgAnimation(isFront, it, composableHeight)
+//            }
+//        } catch (e: Exception) {
+//            println("SVG 로드 중 오류 발생: ${e.message}")
+//        }
+//    }
+//
+//    DisposableEffect(Unit) {
+//        document.getElementById("svg-animation-container")?.let {
+//            it.parentNode?.removeChild(it)
+//        }
+//        val container = document.createElement("div") as HTMLDivElement
+//        container.id = "svg-animation-container"
+//        document.body?.appendChild(container)
+//        svgContainer = container
+//
+//        onDispose {
+//            container.parentNode?.removeChild(container)
+//        }
+//    }
+//    Box(
+//        modifier = modifier.onSizeChanged { size ->
+//            composableWidth = size.width.pxToDp(density).toInt()
+//            composableHeight = size.height.pxToDp(density).toInt()
+//            svgContainer?.style?.apply {
+//                left = "0px"
+//                top = "0px"
+//                width = "${composableWidth}px"
+//                height = "${composableHeight}px"
+//            }
+//        }.onGloballyPositioned { coordinates ->
+//            val position = coordinates.positionInRoot()
+//            positionX = position.x
+//            positionY = position.y
+//        }
+//    )
+//}
+//
+//fun setupSvgAnimation(isFront: Boolean, svgContent: String, height: Int) {
+//    try {
+//        var container = document.getElementById("svg-animation-container") as? HTMLDivElement
+//        container?.remove()
+//        if(isFront.not())
+//            return
+//        container = document.createElement("div") as HTMLDivElement
+//        container.id = "svg-animation-container"
+//
+//        container.style.position = "absolute"
+//        container.style.top = "0px"
+//        container.style.left = "50%"
+//        container.style.transform = "translateX(-50%)"
+//        container.style.width = "400px"
+//        container.style.height = "${height}px"
+//        container.style.zIndex = "100"
+//
+//        document.body?.appendChild(container)
+//        container.innerHTML = svgContent
+//        var svgContainer = document.getElementById("Layer_1") as? HTMLDivElement
+//        svgContainer?.style?.apply {
+//            this.position = "absolute"
+//            this.top = "0px"
+//            this.left = "50%"
+//            this.transform = "translateX(-50%)"
+//            this.width = "400px"
+//            this.height = "${height}px"
+//            this.zIndex = "100"
+//        }
+//
+//    } catch (e: Exception) {
+//        println("SVG 애니메이션 설정 중 오류 발생: ${e.message}")
+//    }
+//}
 

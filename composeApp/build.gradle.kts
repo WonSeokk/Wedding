@@ -46,7 +46,6 @@ kotlin {
     }
     
     sourceSets {
-        
         val commonMain  by getting {
             dependencies {
                 implementation(compose.runtime)
@@ -60,6 +59,7 @@ kotlin {
                 implementation(libs.androidx.lifecycle.runtime.compose)
                 implementation(libs.coil)
                 implementation(libs.coil.svg)
+
             }
         }
         val intermediateMain by creating {
