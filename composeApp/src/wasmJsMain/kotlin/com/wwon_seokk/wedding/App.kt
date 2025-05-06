@@ -127,28 +127,19 @@ fun App() {
                     contentDescription = null
                 )
             }
-            Box(
+            Flippable(
                 modifier = Modifier
                     .width(400.dp)
                     .fillMaxHeight()
-                    .align(Alignment.Center)
-            ) {
-                Content(dimension = dimension)
-            }
-
-//            Flippable(
-//                modifier = Modifier
-//                    .width(400.dp)
-//                    .fillMaxHeight()
-//                    .align(Alignment.Center),
-//                frontSide = {
-//                    Cover(isFront = isFront)
-//                },
-//                backSide = {
-//                    Content(dimension = dimension)
-//                },
-//                flipController = flipController
-//            ) { isFront = it != FlippableState.BACK }
+                    .align(Alignment.Center),
+                frontSide = {
+                    Cover(isFront = isFront)
+                },
+                backSide = {
+                    Content(dimension = dimension)
+                },
+                flipController = flipController
+            ) { isFront = it != FlippableState.BACK }
         }
     }
 }
@@ -223,13 +214,19 @@ private fun Content(
         verticalItemSpacing = 2.dp,
         horizontalArrangement = Arrangement.spacedBy(2.dp),
         content = {
-            item(span = StaggeredGridItemSpan.FullLine) {
+            item(
+                key = "main",
+                span = StaggeredGridItemSpan.FullLine
+            ) {
                 Image(
                     painter = painterResource(Res.drawable.test),
                     contentDescription = null
                 )
             }
-            item(span = StaggeredGridItemSpan.FullLine) {
+            item(
+                key = "main_text",
+                span = StaggeredGridItemSpan.FullLine
+            ) {
                 Column(
                     modifier = Modifier
                         .padding(vertical = 20.dp)
@@ -269,7 +266,8 @@ private fun Content(
                 }
             }
             item(
-                contentType = "title",
+                key = "gallery_text",
+                contentType = "gallery",
                 span = StaggeredGridItemSpan.FullLine
             ) {
                 Column(
@@ -301,44 +299,29 @@ private fun Content(
                 }
             }
             itemsIndexed(
-                key = { i, item -> i },
+                key = { i, item -> "gallery_item_$i" },
                 items = items,
                 span = { i, item -> StaggeredGridItemSpan.SingleLane }
             ) { index, item ->
-//                Image(
-//                    modifier = Modifier
-//                        .fillMaxWidth()
-//                        .then(
-//                            when (index) {
-//                                2, 6, 11 -> Modifier.height(height.dp)
-//                                else -> Modifier.aspectRatio(1f)
-//                            }
-//                        ),
-//                    painter = painterResource(item),
-//                    contentScale = ContentScale.Crop,
-//                    contentDescription = null
-//                )
-                when (index) {
-                    2, 6, 11 -> {
-                        Box(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(height.dp)
-                                .background(Color.Red)
-                        )
-                    }
-                    else -> {
-                        Box(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .aspectRatio(1f)
-                                .background(Color.Blue)
-                        )
-                    }
-                }
+                Image(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .then(
+                            when (index) {
+                                2, 6, 11 -> Modifier.height(height.dp)
+                                else -> Modifier.aspectRatio(1f)
+                            }
+                        ),
+                    painter = painterResource(item),
+                    contentScale = ContentScale.Crop,
+                    contentDescription = null
+                )
                 Text("$index")
             }
-            item(span = StaggeredGridItemSpan.FullLine) {
+            item(
+                key = "map_text",
+                span = StaggeredGridItemSpan.FullLine
+            ) {
                 Row(
                     modifier = Modifier
                         .padding(horizontal = 40.dp, vertical = 20.dp)
@@ -371,7 +354,10 @@ private fun Content(
                         .padding(horizontal = 20.dp)
                 )
             }
-            item(span = StaggeredGridItemSpan.FullLine) {
+            item(
+                key = "map_location",
+                span = StaggeredGridItemSpan.FullLine
+            ) {
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -395,7 +381,10 @@ private fun Content(
                 }
             }
             if(dimension.intValue > 2) {
-                item(span = StaggeredGridItemSpan.FullLine) {
+                item(
+                    key = "spacer",
+                    span = StaggeredGridItemSpan.FullLine
+                ) {
                     Spacer(modifier = Modifier.height(100.dp * (dimension.intValue - 2)))
                 }
             }
