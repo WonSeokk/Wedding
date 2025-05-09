@@ -7,6 +7,7 @@ import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -17,10 +18,14 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.sizeIn
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material.Divider
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
@@ -35,6 +40,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.onGloballyPositioned
@@ -48,6 +54,8 @@ import kotlin.math.ceil
 import kotlinx.browser.document
 import kotlinx.browser.window
 import kotlinx.coroutines.delay
+import kotlinx.datetime.LocalDate
+import kotlinx.datetime.internal.JSJoda.YearMonth
 import org.jetbrains.compose.resources.ExperimentalResourceApi
 import org.jetbrains.compose.resources.painterResource
 import org.w3c.dom.HTMLDivElement
@@ -168,19 +176,16 @@ private fun Content(
             Res.drawable.test,
             Res.drawable.test,
             Res.drawable.test,
+            Res.drawable.test,
+            Res.drawable.test,
+            Res.drawable.test,
+            Res.drawable.test,
+            Res.drawable.test,
+            Res.drawable.test,
             Res.drawable.test
-        ) +
-            listOf(
-                Res.drawable.test,
-                Res.drawable.test,
-                Res.drawable.test,
-                Res.drawable.test,
-                Res.drawable.test,
-                Res.drawable.test
-            )
+        )
     }
 
-    val height = remember { minOf(window.innerWidth * 265 / 400, 265) }
     val listState = rememberLazyListState()
     val mapPositionY by remember {
         derivedStateOf {
@@ -254,6 +259,129 @@ private fun Content(
                     )
                 }
             }
+            item(key = "calendar_text") {
+                Row(
+                    modifier = Modifier.padding(12.dp),
+                    horizontalArrangement = Arrangement.spacedBy(4.dp)
+                ) {
+                    Text(
+                        text = "8",
+                        style = fontFamily.h2,
+                        fontSize = 28.sp,
+                        color = Color(0xFFB76E79)
+                    )
+                    Text(
+                        text = "August",
+                        style = fontFamily.h2,
+                        fontSize = 20.sp,
+                        color = Color(0xFFB76E79)
+                    )
+                }
+            }
+            item(
+                key = "calendar_content"
+            ) {
+                val weeks = remember { listOf("일","월","화","수","목","금","토") }
+                val calendarDays = remember {
+                    val year = 2025
+                    val month = 8
+                    val firstDayOfMonth = LocalDate(year, month, 1)
+                    val daysInMonth = YearMonth.of(year, month).lengthOfMonth()
+                    val firstDayOfWeek = firstDayOfMonth.dayOfWeek.ordinal + 1
+                    val startOffset = if (firstDayOfWeek == 7) 0 else firstDayOfWeek
+
+                    val days = (1..daysInMonth).toList()
+                    List(startOffset) { 0 } + days + List(42 - (startOffset + daysInMonth)) { 0 }
+                }
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp)
+                ) {
+                    Divider(
+                        color = Color(0xFFCFA8A8),
+                        thickness = 2.dp
+                    )
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 20.dp),
+                        verticalArrangement = Arrangement.spacedBy(24.dp, Alignment.CenterVertically),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        repeat(7) { row ->
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(4.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                repeat(7) { col ->
+                                    val text = remember {
+                                        val index = row * 7 + (col - 7)
+                                        val day = calendarDays.getOrNull(index)
+                                        if (row == 0) {
+                                            weeks[col]
+                                        } else {
+                                            if (day != null && day > 0) day.toString() else ""
+                                        }
+                                    }
+                                    if(text != "30")
+                                        Text(
+                                            modifier = Modifier.weight(1f),
+                                            text = text,
+                                            style = fontFamily.body1,
+                                            fontSize = 16.sp,
+                                            color = if(text == "일") Color(0xFFB76E79) else Color(0xFF4B3621),
+                                            textAlign = TextAlign.Center
+                                        )
+                                    else {
+                                        var timeTextPosition by remember { mutableStateOf(0f) }
+                                        Box(
+                                            modifier = Modifier.onSizeChanged {
+                                                timeTextPosition = it.height / dimension.floatValue
+                                            }.weight(1f),
+                                            contentAlignment = Alignment.Center
+                                        ) {
+                                            Box(
+                                                modifier = Modifier
+                                                    .clip(CircleShape)
+                                                    .sizeIn(maxWidth = 32.dp, maxHeight = 32.dp)
+                                                    .background(color = Color(0xFFCFA8A8)),
+                                                contentAlignment = Alignment.Center
+                                            ) {
+                                                Text(
+                                                    modifier = Modifier
+                                                        .padding(4.dp)
+                                                        .aspectRatio(1f),
+                                                    text = text,
+                                                    style = fontFamily.body1,
+                                                    fontSize = 16.sp,
+                                                    color = Color(0xB3FFFFFF),
+                                                    textAlign = TextAlign.Center
+                                                )
+                                            }
+                                            Text(
+                                                modifier = Modifier.offset(y = timeTextPosition.dp - 2.dp),
+                                                text = "오후5:30",
+                                                style = fontFamily.body1,
+                                                fontSize = 12.sp,
+                                                color = Color(0xFF4B3621),
+                                                lineHeight = 11.sp,
+                                                textAlign = TextAlign.Center
+                                            )
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    Divider(
+                        modifier = Modifier.padding(top = 4.dp),
+                        color = Color(0xFFCFA8A8),
+                        thickness = 2.dp
+                    )
+                }
+            }
             item(
                 key = "gallery_text",
                 contentType = "gallery"
@@ -286,37 +414,86 @@ private fun Content(
                     }
                 }
             }
-            val columns = ceil(items.size / 3.toDouble()).toInt()
+            val columns = ceil(items.size / 5.toDouble()).toInt()
             items(
                 count = columns,
                 key = { i -> "gallery_item_$i" }
             ) { column ->
+                val isOdd = column % 2 == 1
                 val firstIndex = column * 3
-                val first = items.getOrNull(firstIndex)
-                val second = items.getOrNull(firstIndex + 1)
-                val third = items.getOrNull(firstIndex + 2)
+                val first =  0 to items.getOrNull(firstIndex)
+                val second = 1 to items.getOrNull(firstIndex + 1)
+                val third = 2 to items.getOrNull(firstIndex + 2)
+                val forth = 3 to items.getOrNull(firstIndex + 3)
+                val fifth = 3 to items.getOrNull(firstIndex + 4)
                 Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(3.dp)
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(bottom = 2.dp),
+                    horizontalArrangement = Arrangement.spacedBy(2.dp)
                 ) {
-                    repeat(3) { row ->
-                        val index = firstIndex + row
-                        val item = when(row) {
-                            0 -> first
-                            1 -> second
-                            else -> third
-                        }
-                        Box(modifier = Modifier.weight(1f)) {
-                            item?.let {
+                    if(isOdd) {
+                        Box(
+                            modifier = Modifier
+                                .weight(1f)
+                                .aspectRatio(.5f)
+                        ) {
+                            fifth.second?.let {
                                 Image(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .aspectRatio(1f),
+                                    modifier = Modifier.fillMaxWidth(),
                                     painter = painterResource(it),
                                     contentScale = ContentScale.Crop,
                                     contentDescription = null
                                 )
-                                Text("$index")
+                                Text("5")
+                            }
+                        }
+                    }
+                    Column(
+                        modifier = Modifier.weight(2f),
+                        verticalArrangement = Arrangement.spacedBy(2.dp)
+                    ) {
+                        repeat(2) { i ->
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(2.dp)
+                            ) {
+                                repeat(2) { j ->
+                                    val item = when(i + j) {
+                                        0 -> first
+                                        1 -> second
+                                        2 -> third
+                                        else -> forth
+                                    }
+                                    Box(modifier = Modifier.weight(1f)) {
+                                        item.second?.let {
+                                            Image(
+                                                modifier = Modifier.aspectRatio(1f),
+                                                painter = painterResource(it),
+                                                contentScale = ContentScale.Crop,
+                                                contentDescription = null
+                                            )
+                                            Text("${i + j}")
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    if(isOdd.not()) {
+                        Box(
+                            modifier = Modifier
+                                .weight(1f)
+                                .aspectRatio(.5f)
+                        ) {
+                            fifth.second?.let {
+                                Image(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    painter = painterResource(it),
+                                    contentScale = ContentScale.Crop,
+                                    contentDescription = null
+                                )
+                                Text("5")
                             }
                         }
                     }
