@@ -427,7 +427,7 @@ private fun Content(
                         },
                         label = ""
                     ) { openState ->
-                        if (openState) 0f else 180f
+                        if (openState) 180f else 0f
                     }
                     Column(
                         modifier = Modifier.padding(top = 8.dp),
@@ -957,6 +957,39 @@ private fun Content(
                         .height(300.dp)
                         .padding(horizontal = 20.dp)
                 )
+            }
+            item(
+                key = "map_direct"
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(4.dp)
+                ) {
+                    Text(
+                        modifier = Modifier.clickable {
+                            window.location.href = "tmap://route?rGoName=MJ컨벤션&rGoX=${weddingLng}&rGoY=${weddingLat}"
+                        },
+                        text = "tmap"
+                    )
+                    Text(
+                        modifier = Modifier.clickable {
+                            window.location.href = "kakaomap://place?id=27339651"
+                        },
+                        text = "kakao"
+                    )
+                    Text(
+                        modifier = Modifier.clickable {
+                            window.location.href = "https://map.naver.com?lng=${weddingLng}&lat=${weddingLat}&title=MJ컨벤션"
+                        },
+                        text = "naver"
+                    )
+                    Text(
+                        modifier = Modifier.clickable {
+                            window.location.href = "nmap://place?lng=${weddingLng}&lat=${weddingLat}&name=MJ컨벤션&appname=https://wonseokk.github.io/Wedding/"
+                        },
+                        text = "naver2"
+                    )
+                }
             }
             item(
                 key = "map_location"
