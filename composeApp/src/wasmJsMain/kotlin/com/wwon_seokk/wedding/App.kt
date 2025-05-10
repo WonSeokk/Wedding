@@ -1,13 +1,26 @@
 package com.wwon_seokk.wedding
 
+import DigitCountText
 import Flippable
 import FlippableState
+import RemainTime
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.animateContentSize
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
+import androidx.compose.animation.core.updateTransition
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.scaleOut
+import androidx.compose.animation.slideIn
+import androidx.compose.animation.slideOut
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -20,44 +33,64 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.sizeIn
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.Divider
+import androidx.compose.material.Icon
 import androidx.compose.material.MaterialTheme
+import androidx.compose.material.Surface
 import androidx.compose.material.Text
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowDropDown
+import androidx.compose.material.icons.filled.Call
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.MutableFloatState
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.layout.positionInRoot
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import coil3.compose.LocalPlatformContext
+import getRemainTime
 import kotlin.math.ceil
 import kotlinx.browser.document
 import kotlinx.browser.window
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import kotlinx.datetime.LocalDate
+import kotlinx.datetime.LocalDateTime
+import kotlinx.datetime.TimeZone
 import kotlinx.datetime.internal.JSJoda.YearMonth
+import kotlinx.datetime.toInstant
 import org.jetbrains.compose.resources.ExperimentalResourceApi
 import org.jetbrains.compose.resources.painterResource
+import org.jetbrains.compose.resources.vectorResource
 import org.w3c.dom.HTMLDivElement
 import pxToDp
 import rememberFlipController
@@ -65,6 +98,7 @@ import wedding.composeapp.generated.resources.Res
 import wedding.composeapp.generated.resources.content_background
 import wedding.composeapp.generated.resources.cover
 import wedding.composeapp.generated.resources.cover_background
+import wedding.composeapp.generated.resources.heart
 import wedding.composeapp.generated.resources.test
 
 
@@ -149,7 +183,7 @@ fun App() {
 @Composable
 private fun Cover(
     modifier: Modifier = Modifier,
-    isFront: Boolean
+    isFront: Boolean,
 ) {
     Box(modifier = modifier) {
         Image(
@@ -164,7 +198,7 @@ private fun Cover(
 @OptIn(ExperimentalResourceApi::class)
 @Composable
 private fun Content(
-    dimension: MutableFloatState
+    dimension: MutableFloatState,
 ) {
     val items = remember {
         listOf(
@@ -184,6 +218,46 @@ private fun Content(
             Res.drawable.test,
             Res.drawable.test
         )
+    }
+    val timeMillis = remember {
+        val date = LocalDateTime.parse("2025-08-30T08:30:00")
+        val instant = date.toInstant(TimeZone.UTC)
+        instant.toEpochMilliseconds()
+    }
+    var remainTime: RemainTime by remember { mutableStateOf(RemainTime())}
+    LaunchedEffect(Unit) {
+        launch(Dispatchers.Default) {
+            while(true) {
+                remainTime = timeMillis.getRemainTime()
+                delay(1000L)
+            }
+        }
+    }
+    val hour = remember(remainTime.hour) {
+        val (first, second) = remainTime.hour.toList().let {
+            if(it.size > 2)
+                it.first() to it.filterIndexed { index, _ -> index != 0 }.joinToString("").toInt()
+            else
+                it.first() to it.last().digitToInt()
+        }
+        if(first == '0')
+            first.toString() to second
+        else
+            "" to remainTime.hour.toInt()
+    }
+    val min = remember(remainTime.min) {
+        val (first, second) = remainTime.min.toList().let { it.first() to it.last() }
+        if(first == '0')
+            first.toString() to second.digitToInt()
+        else
+            "" to remainTime.min.toInt()
+    }
+    val sec = remember(remainTime.sec) {
+        val (first, second) = remainTime.sec.toList().let { it.first() to it.last() }
+        if(first == '0')
+            first.toString() to second.digitToInt()
+        else
+            "" to remainTime.sec.toInt()
     }
 
     val listState = rememberLazyListState()
@@ -224,7 +298,7 @@ private fun Content(
                 Column(
                     modifier = Modifier
                         .padding(vertical = 20.dp)
-                        .padding(bottom = 12.dp)
+                        .padding(top = 20.dp, bottom = 12.dp)
                         .fillMaxWidth(),
                     verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
@@ -251,12 +325,294 @@ private fun Content(
                     Text(
                         modifier = Modifier.fillMaxWidth(),
                         text = "다른 공간, 다른 시간을 걷던 두 사람이\n서로를 마주한 이후 같은 공간, 같은 시간을\n꿈꾸며 걷게 되었습니다\n\n" +
-                            "따뜻한 축복으로 저희 두 사람이\n함께하는 첫 걸음을 더욱 빛내주세요.",
+                            "따뜻한 축복으로 저희 두 사람이\n함께하는 첫 걸음을 더욱 빛내주세요",
                         style = fontFamily.body1,
                         fontSize = 14.sp,
                         color = Color(0xFF4B3621),
                         textAlign = TextAlign.Center
                     )
+                }
+            }
+            item(key = "contact") {
+                Column(
+                    modifier = Modifier
+                        .padding(top = 16.dp, bottom = 32.dp)
+                        .fillMaxWidth(),
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(top = 24.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(4.dp, Alignment.CenterHorizontally)
+                    ) {
+                        Row(verticalAlignment = Alignment.Bottom) {
+                            Text(
+                                text = "최상범·이혜정",
+                                style = fontFamily.body1,
+                                fontSize = 18.sp,
+                                color = Color(0xFF4B3621)
+                            )
+                            Text(
+                                text = "의 아들",
+                                style = fontFamily.body1,
+                                fontSize = 15.sp,
+                                color = Color(0xFF4B3621)
+                            )
+                            Text(
+                                modifier = Modifier.padding(start = 4.dp),
+                                text = "원석",
+                                style = fontFamily.body1,
+                                fontSize = 18.sp,
+                                color = Color(0xFF4B3621)
+                            )
+                        }
+
+                        Image(
+                            modifier = Modifier
+                                .size(20.dp)
+                                .clickable { window.location.href = "tel://010-6778-2939" },
+                            imageVector = Icons.Filled.Call,
+                            contentDescription = null,
+                            colorFilter = ColorFilter.tint(Color(0xFFB76E79))
+                        )
+                    }
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(4.dp, Alignment.CenterHorizontally)
+                    ) {
+                        Row(verticalAlignment = Alignment.Bottom) {
+                            Text(
+                                text = "윤태욱·박성숙",
+                                style = fontFamily.body1,
+                                fontSize = 18.sp,
+                                color = Color(0xFF4B3621)
+                            )
+                            Text(
+                                text = "의   딸 ",
+                                style = fontFamily.body1,
+                                fontSize = 15.sp,
+                                color = Color(0xFF4B3621)
+                            )
+                            Text(
+                                modifier = Modifier.padding(start = 4.dp),
+                                text = "서영",
+                                style = fontFamily.body1,
+                                fontSize = 18.sp,
+                                color = Color(0xFF4B3621)
+                            )
+                        }
+                        Image(
+                            modifier = Modifier
+                                .size(20.dp)
+                                .clickable { window.location.href = "tel://010-9264-7479" },
+                            imageVector = Icons.Filled.Call,
+                            contentDescription = null,
+                            colorFilter = ColorFilter.tint(Color(0xFFB76E79))
+                        )
+                    }
+
+                    var isParentContactOpened by remember { mutableStateOf(false) }
+                    val stateTransition = updateTransition(targetState = isParentContactOpened, label = "")
+                    val rotation: Float by stateTransition.animateFloat(
+                        transitionSpec = {
+                            if (isParentContactOpened) {
+                                spring(stiffness = Spring.StiffnessLow)
+                            } else {
+                                spring(stiffness = Spring.StiffnessMedium)
+                            }
+                        },
+                        label = ""
+                    ) { openState ->
+                        if (openState) 0f else 180f
+                    }
+                    Column(
+                        modifier = Modifier.padding(top = 8.dp),
+                        verticalArrangement = Arrangement.spacedBy(16.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Row(
+                            modifier = Modifier.clickable { isParentContactOpened = !isParentContactOpened },
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                text = "혼주에게 연락하기",
+                                style = fontFamily.body1,
+                                fontSize = 15.sp,
+                                color = Color(0xFF4B3621)
+                            )
+                            Image(
+                                modifier = Modifier
+                                    .rotate(rotation)
+                                    .size(21.dp),
+                                imageVector = Icons.Filled.ArrowDropDown,
+                                contentDescription = null,
+                                colorFilter = ColorFilter.tint(Color(0xFF4B3621))
+                            )
+                        }
+                        AnimatedVisibility(
+                            visible = isParentContactOpened,
+                            enter = slideIn(animationSpec = tween(durationMillis = 500)) { IntOffset(0, -80) }
+                        ) {
+                            Row(
+                                modifier = Modifier.animateContentSize(
+                                    animationSpec = tween(
+                                        durationMillis = 250,
+                                        easing = LinearEasing
+                                    )
+                                ),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Column(
+                                    modifier = Modifier.weight(1f),
+                                    horizontalAlignment = Alignment.CenterHorizontally
+                                ) {
+                                    Text(
+                                        modifier = Modifier.padding(bottom = 8.dp),
+                                        text = "신랑측",
+                                        style = fontFamily.body1,
+                                        fontSize = 16.sp,
+                                        color = Color(0xFF5f8b9b)
+                                    )
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.spacedBy(4.dp, Alignment.CenterHorizontally)
+                                    ) {
+                                        Row(
+                                            verticalAlignment = Alignment.Bottom,
+                                            horizontalArrangement = Arrangement.spacedBy(4.dp)
+                                        ) {
+                                            Text(
+                                                text = "아버지",
+                                                style = fontFamily.body1,
+                                                fontSize = 14.sp,
+                                                color = Color(0xFF4B3621)
+                                            )
+                                            Text(
+                                                text = "최상범",
+                                                style = fontFamily.body1,
+                                                fontSize = 16.sp,
+                                                color = Color(0xFF4B3621)
+                                            )
+                                        }
+                                        Image(
+                                            modifier = Modifier
+                                                .size(18.dp)
+                                                .clickable { window.location.href = "tel://010-3627-2939" },
+                                            imageVector = Icons.Filled.Call,
+                                            contentDescription = null,
+                                            colorFilter = ColorFilter.tint(Color(0xFF5f8b9b))
+                                        )
+                                    }
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.spacedBy(4.dp, Alignment.CenterHorizontally)
+                                    ) {
+                                        Row(
+                                            verticalAlignment = Alignment.Bottom,
+                                            horizontalArrangement = Arrangement.spacedBy(4.dp)
+                                        ) {
+                                            Text(
+                                                text = "어머니",
+                                                style = fontFamily.body1,
+                                                fontSize = 14.sp,
+                                                color = Color(0xFF4B3621)
+                                            )
+                                            Text(
+                                                text = "이혜정",
+                                                style = fontFamily.body1,
+                                                fontSize = 16.sp,
+                                                color = Color(0xFF4B3621)
+                                            )
+                                        }
+                                        Image(
+                                            modifier = Modifier
+                                                .size(18.dp)
+                                                .clickable { window.location.href = "tel://010-5696-2939" },
+                                            imageVector = Icons.Filled.Call,
+                                            contentDescription = null,
+                                            colorFilter = ColorFilter.tint(Color(0xFF5f8b9b))
+                                        )
+                                    }
+                                }
+                                Column(
+                                    modifier = Modifier.weight(1f),
+                                    horizontalAlignment = Alignment.CenterHorizontally
+                                ) {
+                                    Text(
+                                        modifier = Modifier.padding(bottom = 8.dp),
+                                        text = "신부측",
+                                        style = fontFamily.body1,
+                                        fontSize = 16.sp,
+                                        color = Color(0xFFBB7273)
+                                    )
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.spacedBy(4.dp, Alignment.CenterHorizontally)
+                                    ) {
+                                        Row(
+                                            verticalAlignment = Alignment.Bottom,
+                                            horizontalArrangement = Arrangement.spacedBy(4.dp)
+                                        ) {
+                                            Text(
+                                                text = "아버지",
+                                                style = fontFamily.body1,
+                                                fontSize = 14.sp,
+                                                color = Color(0xFF4B3621)
+                                            )
+                                            Text(
+                                                text = "윤태욱",
+                                                style = fontFamily.body1,
+                                                fontSize = 16.sp,
+                                                color = Color(0xFF4B3621)
+                                            )
+                                        }
+                                        Image(
+                                            modifier = Modifier
+                                                .size(18.dp)
+                                                .clickable { window.location.href = "tel://010-6614-7514" },
+                                            imageVector = Icons.Filled.Call,
+                                            contentDescription = null,
+                                            colorFilter = ColorFilter.tint(Color(0xFFBB7273))
+                                        )
+                                    }
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.spacedBy(4.dp, Alignment.CenterHorizontally)
+                                    ) {
+                                        Row(
+                                            verticalAlignment = Alignment.Bottom,
+                                            horizontalArrangement = Arrangement.spacedBy(4.dp)
+                                        ) {
+                                            Text(
+                                                text = "어머니",
+                                                style = fontFamily.body1,
+                                                fontSize = 14.sp,
+                                                color = Color(0xFF4B3621)
+                                            )
+                                            Text(
+                                                text = "박성숙",
+                                                style = fontFamily.body1,
+                                                fontSize = 16.sp,
+                                                color = Color(0xFF4B3621)
+                                            )
+                                        }
+                                        Image(
+                                            modifier = Modifier
+                                                .size(18.dp)
+                                                .clickable { window.location.href = "tel://010-9254-3181" },
+                                            imageVector = Icons.Filled.Call,
+                                            contentDescription = null,
+                                            colorFilter = ColorFilter.tint(Color(0xFFBB7273))
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    }
                 }
             }
             item(key = "calendar_text") {
@@ -380,6 +736,75 @@ private fun Content(
                         color = Color(0xFFCFA8A8),
                         thickness = 2.dp
                     )
+                }
+            }
+            item(
+                key = "remain_time"
+            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 16.dp, bottom = 24.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp, Alignment.CenterVertically),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Row(
+                        verticalAlignment = Alignment.Bottom,
+                        horizontalArrangement = Arrangement.spacedBy(4.dp, Alignment.CenterHorizontally)
+                    ) {
+                       Row(
+                           verticalAlignment = Alignment.CenterVertically,
+                           horizontalArrangement = Arrangement.spacedBy(2.dp, Alignment.CenterHorizontally)
+                       ) {
+                           Text(
+                               text = "원석",
+                               style = fontFamily.body1,
+                               fontSize = 18.sp,
+                               color = Color(0xFF4B3621),
+                               textAlign = TextAlign.Center
+                           )
+                           Icon(
+                               modifier = Modifier.size(18.dp),
+                               painter = painterResource(Res.drawable.heart),
+                               tint = Color.Black,
+                               contentDescription = null
+                           )
+                           Text(
+                               text = "서영",
+                               style = fontFamily.body1,
+                               fontSize = 18.sp,
+                               color = Color(0xFF4B3621),
+                               textAlign = TextAlign.Center
+                           )
+                       }
+                        Text(
+                            text = "의 결혼식",
+                            style = fontFamily.body1,
+                            fontSize = 14.sp,
+                            color = Color(0xFF4B3621),
+                            lineHeight = 11.sp,
+                            textAlign = TextAlign.Center
+                        )
+                    }
+                    Row(
+                        verticalAlignment = Alignment.Bottom,
+                        horizontalArrangement = Arrangement.spacedBy(4.dp, Alignment.CenterHorizontally)
+                    ) {
+                        DdayContent(time = "D-" to remainTime.day)
+                        Row(
+                            modifier = Modifier.height(28.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(1.dp, Alignment.CenterHorizontally)
+                        ) {
+                            hour?.let {
+                                TimerContent(time = hour)
+                                TimerMiddle()
+                            }
+                            TimerContent(time = min)
+                            TimerMiddle()
+                            TimerContent(time = sec)
+                        }
+                    }
                 }
             }
             item(
@@ -573,7 +998,7 @@ private fun Content(
 @Composable
 fun SvgAnimationContainer(
     modifier: Modifier = Modifier,
-    isFront: Boolean
+    isFront: Boolean,
 ) {
     val density = LocalDensity.current
     var svgContent: String? by remember { mutableStateOf(null) }
@@ -664,3 +1089,74 @@ fun setupSvgAnimation(isFront: Boolean, svgContent: String, height: Int) {
     }
 }
 
+
+
+@Composable
+private fun TimerMiddle(
+    padding: Int = 3,
+    middleFontSize: Int = 2,
+    color: Color = Color(0xFF4B3621)
+) {
+    Column(
+        verticalArrangement = Arrangement.spacedBy(padding.dp, Alignment.CenterVertically)
+    ) {
+        Spacer(
+            modifier = Modifier
+                .size(middleFontSize.dp)
+                .clip(CircleShape)
+                .background(color = color)
+        )
+        Spacer(
+            modifier = Modifier
+                .size(middleFontSize.dp)
+                .clip(CircleShape)
+                .background(color = color)
+        )
+    }
+}
+
+@Composable
+private fun TimerContent(
+    time: Pair<String, Int>,
+    fontSize: Int = 18,
+    contentColor: Color = Color.Transparent,
+    color: Color = Color(0xFF4B3621)
+) {
+    Surface(
+        modifier = Modifier
+            .fillMaxHeight()
+            .aspectRatio(1f),
+        shape = RoundedCornerShape(7.dp),
+        color = contentColor
+    ) {
+        DigitCountText(
+            modifier = Modifier.fillMaxWidth(),
+            frontText = time.first,
+            count = time.second,
+            textColor = color,
+            fontSize = fontSize,
+        )
+    }
+}
+
+@Composable
+private fun DdayContent(
+    time: Pair<String, Int>,
+    fontSize: Int = 24,
+    contentColor: Color = Color(0xFFCFA8A8),
+    color: Color = Color(0xFF4B3621)
+) {
+    Surface(
+        modifier = Modifier.fillMaxHeight(),
+        shape = RoundedCornerShape(7.dp),
+        color = contentColor.copy(alpha = .4f)
+    ) {
+        DigitCountText(
+            modifier = Modifier.padding(vertical = 4.dp, horizontal = 8.dp),
+            frontText = time.first,
+            count = time.second,
+            textColor = color,
+            fontSize = fontSize,
+        )
+    }
+}
