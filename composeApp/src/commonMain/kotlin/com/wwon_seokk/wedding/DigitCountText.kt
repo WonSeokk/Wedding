@@ -5,7 +5,7 @@ import androidx.compose.animation.slideOutVertically
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
-import androidx.compose.material.Text
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -23,7 +23,7 @@ fun DigitCountText(
     countFloat: Float? = null,
     textColor: Color = Color(0xFF4B3621),
     fontSize: Int,
-    style: TextStyle = fontFamily.body1,
+    style: TextStyle = fontFamily.bodyLarge,
     textAlign: TextAlign = TextAlign.Center,
 ) {
     Row(

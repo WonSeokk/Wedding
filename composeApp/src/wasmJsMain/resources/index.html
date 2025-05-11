@@ -9,7 +9,6 @@
     <meta property="og:image" content="https://raw.githubusercontent.com/WonSeokk/Wedding/refs/heads/master/composeApp/src/commonMain/composeResources/drawable/test.jpg" />
     <title>Wedding</title>
     <link type="text/css" rel="stylesheet" href="styles.css">
-    <script type="application/javascript" src="composeApp.js"></script>
     <script type="text/javascript" src="https://oapi.map.naver.com/openapi/v3/maps.js?ncpKeyId=wxw24lbmdq"></script>
     <script type="text/javascript">
         var weddingMap = null;
@@ -37,9 +36,7 @@
                 center: new naver.maps.LatLng(lat, lng),
                 zoom: zoom,
                 zoomControl: false,
-                scaleControl: false,
-                mapDataControl: false,
-                mapTypeControl: false
+                scaleControl: false
             };
 
             weddingMap = new naver.maps.Map(mapContainer, mapOptions);
@@ -50,7 +47,7 @@
             });
 
             var infoWindow = new naver.maps.InfoWindow({
-                content: '<div style="padding:10px;text-align:center;">원석❤️서영</div>'
+                content: '<div style="padding:10px;text-align:center;">MJ컨벤션</div>'
             });
 
             naver.maps.Event.addListener(marker, 'click', function() {
@@ -74,8 +71,6 @@
         }
 
         function showNaverMap(elementId, show, positionY) {
-            console.log("지도 위치 설정:", elementId, show, positionY);
-
             lastKnownMapPosition = positionY;
 
             var mapContainer = document.getElementById(elementId);
@@ -115,6 +110,8 @@
     </script>
 </head>
 <body>
-<!-- 맵 컨테이너는 JavaScript에서 동적으로 생성됩니다 -->
 </body>
+<footer>
+    <script type="application/javascript" src="composeApp.js"></script>
+</footer>
 </html>

@@ -2,6 +2,7 @@ import androidx.compose.runtime.Stable
 import androidx.compose.ui.unit.Density
 import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.DurationUnit
+import kotlinx.browser.window
 import kotlinx.datetime.Clock
 
 fun Int.pxToDp(density: Density): Float = with(density) {
@@ -46,3 +47,10 @@ data class RemainTime(
     val sec: String = "00"
 )
 
+fun isMobileDevice(): Boolean {
+    val userAgent = window.navigator.userAgent.lowercase()
+    return userAgent.contains("mobi") ||
+        userAgent.contains("android") ||
+        userAgent.contains("iphone") ||
+        userAgent.contains("ipad")
+}
