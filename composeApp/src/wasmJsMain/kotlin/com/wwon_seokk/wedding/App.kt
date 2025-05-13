@@ -14,6 +14,7 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideIn
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -36,18 +37,23 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Card
-import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.Call
-import androidx.compose.material.icons.filled.Pause
+import androidx.compose.material.ripple.RippleAlpha
+import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
+import androidx.compose.material3.LocalAbsoluteTonalElevation
+import androidx.compose.material3.LocalRippleConfiguration
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.RippleConfiguration
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.MutableFloatState
@@ -55,11 +61,11 @@ import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
-import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.rotate
@@ -93,6 +99,9 @@ import kotlinx.datetime.toInstant
 import org.jetbrains.compose.resources.ExperimentalResourceApi
 import org.jetbrains.compose.resources.painterResource
 import org.w3c.dom.HTMLDivElement
+import org.w3c.dom.HTMLVideoElement
+import org.w3c.dom.NodeList
+import org.w3c.dom.get
 import pxToDp
 import rememberFlipController
 import wedding.composeapp.generated.resources.Res
@@ -119,7 +128,7 @@ const val weddingLat = 37.481504867692
 const val weddingLng = 126.79853505353
 const val zoomLevel = 16
 
-@OptIn(ExperimentalResourceApi::class)
+@OptIn(ExperimentalResourceApi::class, ExperimentalMaterial3Api::class, ExperimentalComposeUiApi::class, ExperimentalFoundationApi::class)
 @Composable
 fun App() {
     MaterialTheme {
@@ -135,51 +144,78 @@ fun App() {
             delay(3800)
             isCoverBackground = false
         }
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .onSizeChanged {
-                    dimension.floatValue = it.width / window.innerWidth.toFloat()
-                },
-            contentAlignment = Alignment.Center
+        CompositionLocalProvider(
+            LocalAbsoluteTonalElevation provides 0.dp,
+            LocalRippleConfiguration provides RippleConfiguration(color = Color.Unspecified, rippleAlpha = RippleAlpha(0.0f,0.0f,0.0f,0.0f))
         ) {
-            AnimatedVisibility(
-                visible = isCoverBackground,
-                enter = fadeIn(animationSpec = tween(durationMillis = 1500)),
-                exit = fadeOut(animationSpec = tween(durationMillis = 1500))
-            ) {
-                Image(
-                    modifier = Modifier.fillMaxSize(),
-                    painter = painterResource(Res.drawable.cover_background),
-                    contentScale = ContentScale.FillHeight,
-                    contentDescription = null
-                )
-            }
-            AnimatedVisibility(
-                visible = isCoverBackground.not(),
-                enter = fadeIn(animationSpec = tween(durationMillis = 1500)),
-                exit = fadeOut(animationSpec = tween(durationMillis = 1500))
-            ) {
-                Image(
-                    modifier = Modifier.fillMaxSize(),
-                    painter = painterResource(Res.drawable.content_background),
-                    contentScale = ContentScale.FillHeight,
-                    contentDescription = null
-                )
-            }
-            Flippable(
+            Box(
                 modifier = Modifier
-                    .width(400.dp)
-                    .fillMaxHeight()
-                    .align(Alignment.Center),
-                frontSide = {
-                    Cover(isFront = isFront)
-                },
-                backSide = {
-                    Content(dimension = dimension)
-                },
-                flipController = flipController
-            ) { isFront = it != FlippableState.BACK }
+                    .fillMaxWidth()
+                    .onSizeChanged {
+                        dimension.floatValue = it.width / window.innerWidth.toFloat()
+                    },
+                contentAlignment = Alignment.Center
+            ) {
+                AnimatedVisibility(
+                    visible = isCoverBackground,
+                    enter = fadeIn(animationSpec = tween(durationMillis = 1500)),
+                    exit = fadeOut(animationSpec = tween(durationMillis = 1500))
+                ) {
+                    Image(
+                        modifier = Modifier.fillMaxSize(),
+                        painter = painterResource(Res.drawable.cover_background),
+                        contentScale = ContentScale.FillHeight,
+                        contentDescription = null
+                    )
+                }
+                AnimatedVisibility(
+                    visible = isCoverBackground.not(),
+                    enter = fadeIn(animationSpec = tween(durationMillis = 1500)),
+                    exit = fadeOut(animationSpec = tween(durationMillis = 1500))
+                ) {
+                    Image(
+                        modifier = Modifier.fillMaxSize(),
+                        painter = painterResource(Res.drawable.content_background),
+                        contentScale = ContentScale.FillHeight,
+                        contentDescription = null
+                    )
+                }
+                Flippable(
+                    modifier = Modifier
+                        .width(400.dp)
+                        .fillMaxHeight()
+                        .align(Alignment.Center),
+                    frontSide = {
+                        Cover(isFront = isFront)
+                    },
+                    backSide = {
+                        if(isCoverBackground) {
+                            val playerState = rememberVideoPlayerState()
+                            LaunchedEffect(Unit) {
+                                playerState.openUri("${window.location.origin}/asset/snow.mp4")
+                                playerState.volume = 0f
+                                playerState.loop = true
+                            }
+                            VideoPlayerSurface(
+                                modifier = Modifier.matchParentSize(),
+                                playerState = playerState,
+                                contentScale = ContentScale.FillBounds
+                            ) {
+                                LaunchedEffect(Unit) {
+                                    val documentVideos: NodeList = document.querySelectorAll("video")
+                                    for (i in 0 until documentVideos.length) {
+                                        val video = documentVideos[i] as HTMLVideoElement
+                                        video.style.cssText = "position: absolute; z-index: 1; mix-blend-mode: screen; background-color: black; margin: 0px; left: 0px; top: 0px; object-fit: fill;"
+                                        video.muted = true
+                                    }
+                                }
+                            }
+                        }
+                        Content(dimension = dimension)
+                    },
+                    flipController = flipController
+                ) { isFront = it != FlippableState.BACK }
+            }
         }
     }
 }
@@ -207,16 +243,16 @@ private fun Content(
     val userInteracted = remember{ mutableStateOf(false) }
     val videos = remember {
         listOf(
-            "sample-5s.mp4",
-            "sample-5s.mp4",
-            "sample-5s.mp4",
-            "sample-5s.mp4"
+            "sample.mp4",
+            "sample.mp4",
+            "sample.mp4",
+            "sample.mp4"
         )
     }
     val playerStates = videos.map { video ->
         val state = rememberVideoPlayerState()
         LaunchedEffect(video) {
-            state.openUri("./build/js/packages/composeApp/kotlin/asset/$video")
+            state.openUri("${window.location.origin}/asset/$video")
             state.volume = 0f
             state.loop = true
         }
@@ -242,7 +278,6 @@ private fun Content(
             Res.drawable.test
         )
     }
-    val galleryListCount = remember { mutableIntStateOf(1) }
 
     val timeMillis = remember {
         val date = LocalDateTime.parse("2025-08-30T08:30:00")
@@ -286,6 +321,8 @@ private fun Content(
     }
 
     val listState = rememberLazyListState()
+    val galleryListCount = remember { ceil(items.size / 5.toDouble()).toInt() }
+
     val mapPositionY by remember {
         derivedStateOf {
             listState.layoutInfo.visibleItemsInfo.find { it.key == "map" }?.let {
@@ -304,6 +341,7 @@ private fun Content(
             showNaverMap("map-container", false, 0f)
         }
     }
+
     LazyColumn (
         modifier = Modifier.fillMaxSize(),
         state = listState,
@@ -311,10 +349,12 @@ private fun Content(
             item(
                 key = "main"
             ) {
-                Image(
-                    painter = painterResource(Res.drawable.test),
-                    contentDescription = null
-                )
+                Box {
+                    Image(
+                        painter = painterResource(Res.drawable.test),
+                        contentDescription = null
+                    )
+                }
             }
             item(
                 key = "main_text"
@@ -322,28 +362,22 @@ private fun Content(
                 Column(
                     modifier = Modifier
                         .padding(vertical = 20.dp)
-                        .padding(top = 20.dp, bottom = 12.dp)
+                        .padding(top = 40.dp, bottom = 12.dp)
                         .fillMaxWidth(),
                     verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     Row(
                         modifier = Modifier
                             .padding(horizontal = 40.dp)
-                            .fillMaxWidth()
+                            .fillMaxWidth(),
+                        horizontalArrangement = Arrangement.Center
                     ) {
                         Text(
-                            text = "초  대  합  니  다",
-                            style = fontFamily.titleMedium,
-                            fontSize = 16.sp,
+                            text = "Invitation",
+                            style = enFontFamily.bodyLarge,
+                            fontSize = 32.sp,
                             color = Color(0xFFB76E79),
                             textAlign = TextAlign.Center
-                        )
-                        Spacer(modifier = Modifier.weight(1f))
-                        Text(
-                            text = "―――――――――――",
-                            style = fontFamily.titleMedium,
-                            fontSize = 16.sp,
-                            color = Color(0xFFCFA8A8)
                         )
                     }
                     Text(
@@ -352,7 +386,7 @@ private fun Content(
                             "따뜻한 축복으로 저희 두 사람이\n함께하는 첫 걸음을 더욱 빛내주세요",
                         style = fontFamily.bodyLarge,
                         fontSize = 14.sp,
-                        color = Color(0xFF4B3621),
+                        color = Color(0xFF574B40),
                         textAlign = TextAlign.Center
                     )
                 }
@@ -377,20 +411,20 @@ private fun Content(
                                 text = "최상범·이혜정",
                                 style = fontFamily.bodyLarge,
                                 fontSize = 18.sp,
-                                color = Color(0xFF4B3621)
+                                color = Color(0xFF574B40)
                             )
                             Text(
                                 text = "의 아들",
                                 style = fontFamily.bodyLarge,
                                 fontSize = 15.sp,
-                                color = Color(0xFF4B3621)
+                                color = Color(0xFF574B40)
                             )
                             Text(
                                 modifier = Modifier.padding(start = 4.dp),
                                 text = "원석",
                                 style = fontFamily.bodyLarge,
                                 fontSize = 18.sp,
-                                color = Color(0xFF4B3621)
+                                color = Color(0xFF574B40)
                             )
                         }
 
@@ -413,20 +447,20 @@ private fun Content(
                                 text = "윤태욱·박성숙",
                                 style = fontFamily.bodyLarge,
                                 fontSize = 18.sp,
-                                color = Color(0xFF4B3621)
+                                color = Color(0xFF574B40)
                             )
                             Text(
                                 text = "의   딸 ",
                                 style = fontFamily.bodyLarge,
                                 fontSize = 15.sp,
-                                color = Color(0xFF4B3621)
+                                color = Color(0xFF574B40)
                             )
                             Text(
                                 modifier = Modifier.padding(start = 4.dp),
                                 text = "서영",
                                 style = fontFamily.bodyLarge,
                                 fontSize = 18.sp,
-                                color = Color(0xFF4B3621)
+                                color = Color(0xFF574B40)
                             )
                         }
                         Image(
@@ -466,7 +500,7 @@ private fun Content(
                                 text = "혼주에게 연락하기",
                                 style = fontFamily.bodyLarge,
                                 fontSize = 15.sp,
-                                color = Color(0xFF4B3621)
+                                color = Color(0xFF574B40)
                             )
                             Image(
                                 modifier = Modifier
@@ -474,7 +508,7 @@ private fun Content(
                                     .size(21.dp),
                                 imageVector = Icons.Filled.ArrowDropDown,
                                 contentDescription = null,
-                                colorFilter = ColorFilter.tint(Color(0xFF4B3621))
+                                colorFilter = ColorFilter.tint(Color(0xFF574B40))
                             )
                         }
                         AnimatedVisibility(
@@ -508,13 +542,13 @@ private fun Content(
                                                 text = "아버지",
                                                 style = fontFamily.bodyLarge,
                                                 fontSize = 14.sp,
-                                                color = Color(0xFF4B3621)
+                                                color = Color(0xFF574B40)
                                             )
                                             Text(
                                                 text = "최상범",
                                                 style = fontFamily.bodyLarge,
                                                 fontSize = 16.sp,
-                                                color = Color(0xFF4B3621)
+                                                color = Color(0xFF574B40)
                                             )
                                         }
                                         Image(
@@ -538,13 +572,13 @@ private fun Content(
                                                 text = "어머니",
                                                 style = fontFamily.bodyLarge,
                                                 fontSize = 14.sp,
-                                                color = Color(0xFF4B3621)
+                                                color = Color(0xFF574B40)
                                             )
                                             Text(
                                                 text = "이혜정",
                                                 style = fontFamily.bodyLarge,
                                                 fontSize = 16.sp,
-                                                color = Color(0xFF4B3621)
+                                                color = Color(0xFF574B40)
                                             )
                                         }
                                         Image(
@@ -580,13 +614,13 @@ private fun Content(
                                                 text = "아버지",
                                                 style = fontFamily.bodyLarge,
                                                 fontSize = 14.sp,
-                                                color = Color(0xFF4B3621)
+                                                color = Color(0xFF574B40)
                                             )
                                             Text(
                                                 text = "윤태욱",
                                                 style = fontFamily.bodyLarge,
                                                 fontSize = 16.sp,
-                                                color = Color(0xFF4B3621)
+                                                color = Color(0xFF574B40)
                                             )
                                         }
                                         Image(
@@ -610,13 +644,13 @@ private fun Content(
                                                 text = "어머니",
                                                 style = fontFamily.bodyLarge,
                                                 fontSize = 14.sp,
-                                                color = Color(0xFF4B3621)
+                                                color = Color(0xFF574B40)
                                             )
                                             Text(
                                                 text = "박성숙",
                                                 style = fontFamily.bodyLarge,
                                                 fontSize = 16.sp,
-                                                color = Color(0xFF4B3621)
+                                                color = Color(0xFF574B40)
                                             )
                                         }
                                         Image(
@@ -648,7 +682,7 @@ private fun Content(
                     Text(
                         text = "August",
                         style = fontFamily.titleMedium,
-                        fontSize = 20.sp,
+                        fontSize = 22.sp,
                         color = Color(0xFFB76E79)
                     )
                 }
@@ -706,7 +740,7 @@ private fun Content(
                                             text = text,
                                             style = fontFamily.bodyLarge,
                                             fontSize = 16.sp,
-                                            color = if(text == "일") Color(0xFFB76E79) else Color(0xFF4B3621),
+                                            color = if(text == "일") Color(0xFFB76E79) else Color(0xFF574B40),
                                             textAlign = TextAlign.Center
                                         )
                                     else {
@@ -740,7 +774,7 @@ private fun Content(
                                                 text = "오후5:30",
                                                 style = fontFamily.bodyLarge,
                                                 fontSize = 12.sp,
-                                                color = Color(0xFF4B3621),
+                                                color = Color(0xFF574B40),
                                                 lineHeight = 11.sp,
                                                 textAlign = TextAlign.Center
                                             )
@@ -779,7 +813,7 @@ private fun Content(
                                text = "원석",
                                style = fontFamily.bodyLarge,
                                fontSize = 18.sp,
-                               color = Color(0xFF4B3621),
+                               color = Color(0xFF574B40),
                                textAlign = TextAlign.Center
                            )
                            Icon(
@@ -792,7 +826,7 @@ private fun Content(
                                text = "서영",
                                style = fontFamily.bodyLarge,
                                fontSize = 18.sp,
-                               color = Color(0xFF4B3621),
+                               color = Color(0xFF574B40),
                                textAlign = TextAlign.Center
                            )
                        }
@@ -800,7 +834,7 @@ private fun Content(
                             text = "의 결혼식",
                             style = fontFamily.bodyLarge,
                             fontSize = 14.sp,
-                            color = Color(0xFF4B3621),
+                            color = Color(0xFF574B40),
                             lineHeight = 11.sp,
                             textAlign = TextAlign.Center
                         )
@@ -830,36 +864,24 @@ private fun Content(
                 key = "gallery_text",
                 contentType = "gallery"
             ) {
-                Column(
+                Row(
                     modifier = Modifier
-                        .padding(bottom = 20.dp)
+                        .padding(vertical = 20.dp)
+                        .padding(top = 40.dp)
                         .fillMaxWidth(),
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                    horizontalArrangement = Arrangement.Center
                 ) {
-                    Row(
-                        modifier = Modifier
-                            .padding(horizontal = 40.dp)
-                            .fillMaxWidth()
-                    ) {
-                        Text(
-                            text = "갤  러  리",
-                            style = fontFamily.titleMedium,
-                            fontSize = 16.sp,
-                            color = Color(0xFFB76E79),
-                            textAlign = TextAlign.Center
-                        )
-                        Spacer(modifier = Modifier.weight(1f))
-                        Text(
-                            text = "―――――――――――",
-                            style = fontFamily.titleMedium,
-                            fontSize = 16.sp,
-                            color = Color(0xFFCFA8A8)
-                        )
-                    }
+                    Text(
+                        text = "Gallery",
+                        style = enFontFamily.bodyLarge,
+                        fontSize = 32.sp,
+                        color = Color(0xFFB76E79),
+                        textAlign = TextAlign.Center
+                    )
                 }
             }
             items(
-                count = galleryListCount.value,
+                count = galleryListCount,
                 key = { i -> "gallery_item_$i" }
             ) { column ->
                 val isOdd = column % 2 == 1
@@ -874,7 +896,7 @@ private fun Content(
                         .fillMaxWidth()
                         .animateItem(
                             fadeInSpec = spring(stiffness = Spring.StiffnessVeryLow),
-                            fadeOutSpec = spring(stiffness = Spring.StiffnessVeryLow)
+                            fadeOutSpec = spring(stiffness = Spring.StiffnessHigh)
                         )
                         .padding(bottom = 2.dp),
                     horizontalArrangement = Arrangement.spacedBy(2.dp)
@@ -960,59 +982,60 @@ private fun Content(
                     }
                 }
             }
-            item(
-                key = "gallery_more"
-            ) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clickable {
-                            userInteracted.value = !userInteracted.value
-                            galleryListCount.value = if(userInteracted.value)
-                                ceil(items.size / 5.toDouble()).toInt()
-                            else
-                                1
-                       },
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(4.dp, Alignment.CenterHorizontally)
-                ) {
-                    Text(
-                        text = "더보기",
-                        style = fontFamily.bodyLarge,
-                        fontSize = 18.sp,
-                        color = Color(0xFF4B3621)
-                    )
-                    Image(
-                        modifier = Modifier
-                            .rotate(0f)
-                            .size(21.dp),
-                        imageVector = Icons.Filled.ArrowDropDown,
-                        contentDescription = null,
-                        colorFilter = ColorFilter.tint(Color(0xFF4B3621))
-                    )
-                }
-            }
+//            item(
+//                key = "gallery_more"
+//            ) {
+//                val scope = rememberCoroutineScope()
+//                Row(
+//                    modifier = Modifier
+//                        .fillMaxWidth()
+//                        .clickable {
+//                            userInteracted.value = !userInteracted.value
+//                            galleryListCount.value = if(userInteracted.value)
+//                                ceil(items.size / 5.toDouble()).toInt()
+//                            else
+//                                1
+//                            if(userInteracted.value.not()) {
+//                                scope.launch {
+//                                    listState.animateScrollToItem(6)
+//                                }
+//                            }
+//                        },
+//                    verticalAlignment = Alignment.CenterVertically,
+//                    horizontalArrangement = Arrangement.spacedBy(4.dp, Alignment.CenterHorizontally)
+//                ) {
+//                    Text(
+//                        text = "더보기",
+//                        style = fontFamily.bodyLarge,
+//                        fontSize = 18.sp,
+//                        color = Color(0xFF574B40)
+//                    )
+//                    Image(
+//                        modifier = Modifier
+//                            .rotate(0f)
+//                            .size(21.dp),
+//                        imageVector = Icons.Filled.ArrowDropDown,
+//                        contentDescription = null,
+//                        colorFilter = ColorFilter.tint(Color(0xFF574B40))
+//                    )
+//                }
+//            }
             item(
                 key = "bank_title"
             ) {
                 Row(
                     modifier = Modifier
-                        .padding(horizontal = 40.dp, vertical = 20.dp)
-                        .fillMaxWidth()
+                        .padding(vertical = 20.dp)
+                        .padding(top = 40.dp)
+                        .fillMaxWidth(),
+                    horizontalArrangement = Arrangement.Center
                 ) {
                     Text(
-                        text = "마음 전하실 곳",
-                        style = fontFamily.titleMedium,
-                        fontSize = 16.sp,
+                        text = "Account",
+                        style = enFontFamily.bodyLarge,
+                        fontSize = 32.sp,
                         color = Color(0xFFB76E79),
                         textAlign = TextAlign.Center
-                    )
-                    Spacer(modifier = Modifier.weight(1f))
-                    Text(
-                        text = "―――――――――――",
-                        style = fontFamily.titleMedium,
-                        fontSize = 16.sp,
-                        color = Color(0xFFCFA8A8)
                     )
                 }
             }
@@ -1024,7 +1047,7 @@ private fun Content(
                     text = "소중한 축하를 보내주셔서 감사드리며,\n따뜻한 마음에 깊이 감사드립니다",
                     style = fontFamily.bodyLarge,
                     fontSize = 16.sp,
-                    color = Color(0xFF4B3621),
+                    color = Color(0xFF574B40),
                     textAlign = TextAlign.Center
                 )
             }
@@ -1071,7 +1094,7 @@ private fun Content(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Text(
-                            text = "신랑측",
+                            text = "신랑측 계좌번호",
                             style = fontFamily.bodyLarge,
                             fontSize = 18.sp,
                             color = Color(0xFF5f8b9b)
@@ -1103,13 +1126,13 @@ private fun Content(
                                         text = "1002-047-772519",
                                         style = fontFamily.bodyLarge,
                                         fontSize = 16.sp,
-                                        color = Color(0xFF4B3621)
+                                        color = Color(0xFF574B40)
                                     )
                                     Text(
                                         text = "우리은행 최원석",
                                         style = fontFamily.bodyLarge,
                                         fontSize = 16.sp,
-                                        color = Color(0xFF4B3621)
+                                        color = Color(0xFF574B40)
                                     )
                                 }
                                 Text(
@@ -1120,73 +1143,44 @@ private fun Content(
                                     text = "복사",
                                     style = fontFamily.bodyLarge,
                                     fontSize = 16.sp,
-                                    color = Color(0xFF4B3621)
+                                    color = Color(0xFF574B40)
                                 )
                             }
                             HorizontalDivider(
                                 modifier = Modifier.padding(vertical = 4.dp),
-                                color = Color(0xFF4B3621).copy(alpha = .3f)
+                                color = Color(0xFF574B40).copy(alpha = .3f)
                             )
                             Row(verticalAlignment = Alignment.CenterVertically) {
                                 Column(modifier = Modifier.weight(1f)) {
                                     Text(
                                         modifier = Modifier.padding(bottom = 4.dp),
-                                        text = "신랑 아버지",
+                                        text = "신랑 부모님",
                                         style = fontFamily.bodyLarge,
                                         fontSize = 16.sp,
                                         color = Color(0xFF5f8b9b)
                                     )
                                     Text(
-                                        text = "1002-047-772519",
+                                        text = "117-910010410-05",
                                         style = fontFamily.bodyLarge,
                                         fontSize = 16.sp,
-                                        color = Color(0xFF4B3621)
+                                        color = Color(0xFF574B40)
                                     )
                                     Text(
-                                        text = "최상범",
+                                        text = "하나은행 최상범",
                                         style = fontFamily.bodyLarge,
                                         fontSize = 16.sp,
-                                        color = Color(0xFF4B3621)
+                                        color = Color(0xFF574B40)
                                     )
                                 }
                                 Text(
+                                    modifier = Modifier.clickable {
+                                        window.navigator.clipboard.writeText("11791001041005")
+                                        window.alert("[11791001041005] 복사 완료")
+                                    },
                                     text = "복사",
                                     style = fontFamily.bodyLarge,
                                     fontSize = 16.sp,
-                                    color = Color(0xFF4B3621)
-                                )
-                            }
-                            HorizontalDivider(
-                                modifier = Modifier.padding(vertical = 4.dp),
-                                color = Color(0xFF4B3621).copy(alpha = .3f)
-                            )
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Column(modifier = Modifier.weight(1f)) {
-                                    Text(
-                                        modifier = Modifier.padding(bottom = 4.dp),
-                                        text = "신랑 어머니",
-                                        style = fontFamily.bodyLarge,
-                                        fontSize = 16.sp,
-                                        color = Color(0xFF5f8b9b)
-                                    )
-                                    Text(
-                                        text = "1002-047-772519",
-                                        style = fontFamily.bodyLarge,
-                                        fontSize = 16.sp,
-                                        color = Color(0xFF4B3621)
-                                    )
-                                    Text(
-                                        text = "이혜정",
-                                        style = fontFamily.bodyLarge,
-                                        fontSize = 16.sp,
-                                        color = Color(0xFF4B3621)
-                                    )
-                                }
-                                Text(
-                                    text = "복사",
-                                    style = fontFamily.bodyLarge,
-                                    fontSize = 16.sp,
-                                    color = Color(0xFF4B3621)
+                                    color = Color(0xFF574B40)
                                 )
                             }
                         }
@@ -1196,7 +1190,7 @@ private fun Content(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Text(
-                            text = "신부측",
+                            text = "신부측 계좌번호",
                             style = fontFamily.bodyLarge,
                             fontSize = 18.sp,
                             color = Color(0xFFBB7273)
@@ -1228,13 +1222,13 @@ private fun Content(
                                         text = "210702-04-371383",
                                         style = fontFamily.bodyLarge,
                                         fontSize = 16.sp,
-                                        color = Color(0xFF4B3621)
+                                        color = Color(0xFF574B40)
                                     )
                                     Text(
                                         text = "국민은행 윤서영",
                                         style = fontFamily.bodyLarge,
                                         fontSize = 16.sp,
-                                        color = Color(0xFF4B3621)
+                                        color = Color(0xFF574B40)
                                     )
                                 }
                                 Text(
@@ -1245,40 +1239,44 @@ private fun Content(
                                     text = "복사",
                                     style = fontFamily.bodyLarge,
                                     fontSize = 16.sp,
-                                    color = Color(0xFF4B3621)
+                                    color = Color(0xFF574B40)
                                 )
                             }
                             HorizontalDivider(
                                 modifier = Modifier.padding(vertical = 4.dp),
-                                color = Color(0xFF4B3621).copy(alpha = .3f)
+                                color = Color(0xFF574B40).copy(alpha = .3f)
                             )
                             Row(verticalAlignment = Alignment.CenterVertically) {
                                 Column(modifier = Modifier.weight(1f)) {
                                     Text(
                                         modifier = Modifier.padding(bottom = 4.dp),
-                                        text = "신부 어머니",
+                                        text = "신부 부모님",
                                         style = fontFamily.bodyLarge,
                                         fontSize = 16.sp,
                                         color = Color(0xFFBB7273)
                                     )
                                     Text(
-                                        text = "210702-04-371383",
+                                        text = "029-21-0791-565",
                                         style = fontFamily.bodyLarge,
                                         fontSize = 16.sp,
-                                        color = Color(0xFF4B3621)
+                                        color = Color(0xFF574B40)
                                     )
                                     Text(
-                                        text = "박성숙",
+                                        text = "국민은행 박성숙",
                                         style = fontFamily.bodyLarge,
                                         fontSize = 16.sp,
-                                        color = Color(0xFF4B3621)
+                                        color = Color(0xFF574B40)
                                     )
                                 }
                                 Text(
+                                    modifier = Modifier.clickable {
+                                        window.navigator.clipboard.writeText("029210791565")
+                                        window.alert("[029210791565] 복사 완료")
+                                    },
                                     text = "복사",
                                     style = fontFamily.bodyLarge,
                                     fontSize = 16.sp,
-                                    color = Color(0xFF4B3621)
+                                    color = Color(0xFF574B40)
                                 )
                             }
                         }
@@ -1291,22 +1289,17 @@ private fun Content(
             ) {
                 Row(
                     modifier = Modifier
-                        .padding(horizontal = 40.dp, vertical = 20.dp)
-                        .fillMaxWidth()
+                        .padding(vertical = 20.dp)
+                        .padding(top = 40.dp)
+                        .fillMaxWidth(),
+                    horizontalArrangement = Arrangement.Center
                 ) {
                     Text(
-                        text = "오시는 길",
-                        style = fontFamily.titleMedium,
-                        fontSize = 16.sp,
+                        text = "Location",
+                        style = enFontFamily.bodyLarge,
+                        fontSize = 32.sp,
                         color = Color(0xFFB76E79),
                         textAlign = TextAlign.Center
-                    )
-                    Spacer(modifier = Modifier.weight(1f))
-                    Text(
-                        text = "―――――――――――",
-                        style = fontFamily.titleMedium,
-                        fontSize = 16.sp,
-                        color = Color(0xFFCFA8A8)
                     )
                 }
             }
@@ -1341,10 +1334,14 @@ private fun Content(
                                     "https://map.kakao.com/link/map/27339651"
                             },
                         colors = CardDefaults.cardColors().copy(containerColor = Color.Transparent),
+                        shape = RoundedCornerShape(4.dp),
                         elevation = CardDefaults.elevatedCardElevation(defaultElevation = 0.dp),
-                        border = BorderStroke(1.dp, Color(0xFF4B3621))
+                        border = BorderStroke(1.dp, Color(0xFF574B40))
                     ) {
                         Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 4.dp),
                             verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.spacedBy(4.dp, Alignment.CenterHorizontally)
                         ) {
@@ -1357,7 +1354,7 @@ private fun Content(
                                 text = "카카오맵",
                                 style = fontFamily.bodyLarge,
                                 fontSize = 14.sp,
-                                color = Color(0xFF4B3621)
+                                color = Color(0xFF574B40)
                             )
                         }
                     }
@@ -1371,10 +1368,14 @@ private fun Content(
                                     "https://map.naver.com?lng=${weddingLng}&lat=${weddingLat}&title=MJ컨벤션"
                             },
                         colors = CardDefaults.cardColors().copy(containerColor = Color.Transparent),
+                        shape = RoundedCornerShape(4.dp),
                         elevation = CardDefaults.elevatedCardElevation(defaultElevation = 0.dp),
-                        border = BorderStroke(1.dp, Color(0xFF4B3621))
+                        border = BorderStroke(1.dp, Color(0xFF574B40))
                     ) {
                         Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 4.dp),
                             verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.spacedBy(4.dp, Alignment.CenterHorizontally)
                         ) {
@@ -1387,7 +1388,7 @@ private fun Content(
                                 text = "네이버지도",
                                 style = fontFamily.bodyLarge,
                                 fontSize = 14.sp,
-                                color = Color(0xFF4B3621)
+                                color = Color(0xFF574B40)
                             )
                         }
                     }
@@ -1397,10 +1398,14 @@ private fun Content(
                                 .weight(1f)
                                 .clickable { window.location.href = "tmap://route?rGoName=MJ컨벤션&rGoX=${weddingLng}&rGoY=${weddingLat}" },
                             colors = CardDefaults.cardColors().copy(containerColor = Color.Transparent),
+                            shape = RoundedCornerShape(4.dp),
                             elevation = CardDefaults.elevatedCardElevation(defaultElevation = 0.dp),
-                            border = BorderStroke(1.dp, Color(0xFF4B3621))
+                            border = BorderStroke(1.dp, Color(0xFF574B40))
                         ) {
                             Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(vertical = 4.dp),
                                 verticalAlignment = Alignment.CenterVertically,
                                 horizontalArrangement = Arrangement.spacedBy(4.dp, Alignment.CenterHorizontally)
                             ) {
@@ -1413,7 +1418,7 @@ private fun Content(
                                     text = "티맵",
                                     style = fontFamily.bodyLarge,
                                     fontSize = 14.sp,
-                                    color = Color(0xFF4B3621)
+                                    color = Color(0xFF574B40)
                                 )
                             }
                         }
@@ -1432,14 +1437,14 @@ private fun Content(
                         text = "경기도 부천시 소사구 소사본동 65-7",
                         style = fontFamily.bodyLarge,
                         fontSize = 14.sp,
-                        color = Color(0xFF4B3621),
+                        color = Color(0xFF574B40),
                         textAlign = TextAlign.Center
                     )
                     Text(
                         text = "MJ컨벤션 그랜드볼룸",
                         style = fontFamily.bodyLarge,
                         fontSize = 14.sp,
-                        color = Color(0xFF4B3621),
+                        color = Color(0xFF574B40),
                         textAlign = TextAlign.Center
                     )
                 }
@@ -1556,7 +1561,7 @@ fun setupSvgAnimation(isFront: Boolean, svgContent: String, height: Int) {
 private fun TimerMiddle(
     padding: Int = 3,
     middleFontSize: Int = 2,
-    color: Color = Color(0xFF4B3621)
+    color: Color = Color(0xFF574B40)
 ) {
     Column(
         verticalArrangement = Arrangement.spacedBy(padding.dp, Alignment.CenterVertically)
@@ -1581,7 +1586,7 @@ private fun TimerContent(
     time: Pair<String, Int>,
     fontSize: Int = 18,
     contentColor: Color = Color.Transparent,
-    color: Color = Color(0xFF4B3621)
+    color: Color = Color(0xFF574B40)
 ) {
     Surface(
         modifier = Modifier
@@ -1605,7 +1610,7 @@ private fun DdayContent(
     time: Pair<String, Int>,
     fontSize: Int = 24,
     contentColor: Color = Color(0xFFCFA8A8),
-    color: Color = Color(0xFF4B3621)
+    color: Color = Color(0xFF574B40)
 ) {
     Surface(
         modifier = Modifier.fillMaxHeight(),
@@ -1631,24 +1636,28 @@ private fun VideoPlayer(
         if(userInteracted.value)
             playerState.play()
     }
-    if(userInteracted.value)
-        VideoPlayerSurface(
-            modifier = Modifier.fillMaxSize(),
-            playerState = playerState,
-            contentScale = ContentScale.FillBounds
-        )
-    else
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(color = Color.Blue),
-            contentAlignment = Alignment.Center
-        ) {
-            Icon(
-                imageVector = Icons.Default.Pause,
-                contentDescription = "비디오 재생",
-                tint = Color.White,
-                modifier = Modifier.size(32.dp)
-            )
+    var isReady by remember { mutableStateOf(false) }
+    LaunchedEffect(Unit) {
+        delay(800L)
+        isReady = true
+    }
+    VideoPlayerSurface(
+        modifier = Modifier.fillMaxSize(),
+        playerState = playerState,
+        contentScale = ContentScale.FillBounds
+    ) {
+        LaunchedEffect(Unit) {
+            val documentVideos: NodeList = document.querySelectorAll("video")
+            for (i in 0 until documentVideos.length) {
+                val video = documentVideos[i] as HTMLVideoElement
+                video.muted = true
+            }
         }
+        if (isReady.not())
+            Spacer(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(color = Color.White)
+            )
+    }
 }
