@@ -1,3 +1,4 @@
+import org.jetbrains.compose.ExperimentalComposeLibrary
 import org.jetbrains.kotlin.gradle.ExperimentalWasmDsl
 import org.jetbrains.kotlin.gradle.targets.js.webpack.KotlinWebpackConfig
 
@@ -6,6 +7,7 @@ plugins {
     alias(libs.plugins.composeMultiplatform)
     alias(libs.plugins.composeCompiler)
 }
+
 
 kotlin {
     @OptIn(ExperimentalWasmDsl::class)
@@ -36,17 +38,22 @@ kotlin {
             implementation(compose.material3)
             implementation(compose.ui)
             implementation(compose.animation)
+            implementation(compose.animationGraphics)
             implementation(compose.components.resources)
             implementation(compose.components.uiToolingPreview)
             implementation(compose.materialIconsExtended)
             implementation(libs.androidx.lifecycle.viewmodel)
             implementation(libs.androidx.lifecycle.runtime.compose)
             implementation(libs.coil)
-            implementation(libs.coil.svg)
+            implementation(libs.coil.network)
             implementation("org.jetbrains.kotlinx:kotlinx-datetime:0.6.2")
             implementation("io.github.kdroidfilter:composemediaplayer:0.7.3")
         }
+
+        jsMain.dependencies {
+            implementation(compose.desktop.currentOs)
+            implementation(libs.ktor.engine.js)
+        }
     }
 }
-
 

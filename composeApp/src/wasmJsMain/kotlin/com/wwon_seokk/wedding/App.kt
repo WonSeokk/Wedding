@@ -4,7 +4,12 @@ import DigitCountText
 import Flippable
 import FlippableState
 import RemainTime
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.AnimatedContentScope
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.ExperimentalSharedTransitionApi
+import androidx.compose.animation.SharedTransitionLayout
+import androidx.compose.animation.SharedTransitionScope
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.spring
@@ -21,6 +26,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
@@ -28,18 +34,24 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.sizeIn
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.Call
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.ripple.RippleAlpha
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -69,8 +81,12 @@ import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.rotate
+import androidx.compose.ui.graphics.BlurEffect
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
+import androidx.compose.ui.graphics.TileMode
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.graphics.painter.ColorPainter
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.onSizeChanged
@@ -80,12 +96,17 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.util.lerp
+import coil3.compose.AsyncImage
+import coil3.compose.LocalPlatformContext
+import coil3.network.ktor3.KtorNetworkFetcherFactory
+import coil3.request.ImageRequest
 import getRemainTime
 import io.github.kdroidfilter.composemediaplayer.VideoPlayerState
 import io.github.kdroidfilter.composemediaplayer.VideoPlayerSurface
 import io.github.kdroidfilter.composemediaplayer.rememberVideoPlayerState
 import isMobileDevice
-import kotlin.math.ceil
+import kotlin.math.absoluteValue
 import kotlinx.browser.document
 import kotlinx.browser.window
 import kotlinx.coroutines.Dispatchers
@@ -106,12 +127,10 @@ import pxToDp
 import rememberFlipController
 import wedding.composeapp.generated.resources.Res
 import wedding.composeapp.generated.resources.content_background
-import wedding.composeapp.generated.resources.cover
 import wedding.composeapp.generated.resources.cover_background
 import wedding.composeapp.generated.resources.heart
 import wedding.composeapp.generated.resources.kakao_icon
 import wedding.composeapp.generated.resources.navermap_icon
-import wedding.composeapp.generated.resources.test
 import wedding.composeapp.generated.resources.tmap_icon
 
 
@@ -128,7 +147,9 @@ const val weddingLat = 37.481504867692
 const val weddingLng = 126.79853505353
 const val zoomLevel = 16
 
-@OptIn(ExperimentalResourceApi::class, ExperimentalMaterial3Api::class, ExperimentalComposeUiApi::class, ExperimentalFoundationApi::class)
+@OptIn(ExperimentalResourceApi::class, ExperimentalMaterial3Api::class, ExperimentalComposeUiApi::class, ExperimentalFoundationApi::class,
+    ExperimentalSharedTransitionApi::class
+)
 @Composable
 fun App() {
     MaterialTheme {
@@ -144,6 +165,7 @@ fun App() {
             delay(3800)
             isCoverBackground = false
         }
+
         CompositionLocalProvider(
             LocalAbsoluteTonalElevation provides 0.dp,
             LocalRippleConfiguration provides RippleConfiguration(color = Color.Unspecified, rippleAlpha = RippleAlpha(0.0f,0.0f,0.0f,0.0f))
@@ -192,7 +214,7 @@ fun App() {
                         if(isCoverBackground) {
                             val playerState = rememberVideoPlayerState()
                             LaunchedEffect(Unit) {
-                                playerState.openUri("${window.location.origin}/asset/snow.mp4")
+                                playerState.openUri("${window.location.href}/asset/snow.mp4")
                                 playerState.volume = 0f
                                 playerState.loop = true
                             }
@@ -211,7 +233,136 @@ fun App() {
                                 }
                             }
                         }
-                        Content(dimension = dimension)
+                        var showDetails by remember { mutableStateOf(false) }
+                        var detailKey by remember { mutableStateOf("") }
+                        val listState = rememberLazyListState()
+                        SharedTransitionLayout {
+                            AnimatedContent(showDetails) {
+                                if(!it)
+                                    Content(
+                                        listState = listState,
+                                        sharedTransitionScope = this@SharedTransitionLayout,
+                                        animatedContentScope = this@AnimatedContent,
+                                        detailKey = detailKey,
+                                        dimension = dimension
+                                    ) {
+                                        showNaverMap("map-container", false, 0f)
+                                        detailKey = it
+                                        showDetails = true
+                                    }
+                                if(it) {
+                                    val index = detailKey.split("image").last().toInt() - 1
+                                    val horizontalState = rememberPagerState(index) { 10 }
+                                    LaunchedEffect(horizontalState.currentPage) {
+                                        detailKey = "image${horizontalState.currentPage + 1}"
+                                    }
+                                    Box(
+                                        modifier = Modifier
+                                            .fillMaxSize()
+                                            .background(Color.Transparent),
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        Column {
+                                            Box(
+                                                modifier = Modifier
+                                                    .fillMaxWidth()
+                                                    .padding(8.dp)
+                                            ) {
+                                                Text(
+                                                    modifier = Modifier
+                                                        .align(Alignment.Center)
+                                                        .sharedBounds(
+                                                            sharedContentState = rememberSharedContentState("gallery"),
+                                                            animatedVisibilityScope = this@AnimatedContent,
+                                                            enter = fadeIn(),
+                                                            exit = fadeOut(),
+                                                            resizeMode = SharedTransitionScope.ResizeMode.ScaleToBounds()
+                                                        ),
+                                                    text = "Gallery",
+                                                    style = enFontFamily.bodyLarge,
+                                                    fontSize = 32.sp,
+                                                    color = Color(0xFFB76E79),
+                                                    textAlign = TextAlign.Center
+                                                )
+                                                Icon(
+                                                    modifier = Modifier
+                                                        .clickable { showDetails = false }
+                                                        .size(28.dp)
+                                                        .align(Alignment.CenterEnd),
+                                                    imageVector = Icons.Default.Close,
+                                                    contentDescription = null,
+                                                    tint = Color(0xFF574B40)
+                                                )
+                                            }
+                                            HorizontalPager(
+                                                modifier = Modifier
+                                                    .weight(.6f, false)
+                                                    .widthIn(max = 420.dp),
+                                                state = horizontalState,
+                                                pageSpacing = 1.dp,
+                                                beyondViewportPageCount = 3,
+                                                contentPadding = PaddingValues(horizontal = 24.dp)
+                                            ) { page ->
+                                                Box(
+                                                    modifier = Modifier
+                                                        .graphicsLayer {
+                                                            val pageOffset = horizontalState.currentPage - page + horizontalState.currentPageOffsetFraction
+                                                            alpha = lerp(
+                                                                start = .5f,
+                                                                stop = 1f,
+                                                                fraction = 1f - pageOffset.absoluteValue.coerceIn(0f, 1f),
+                                                            )
+                                                            lerp(
+                                                                start = 1f,
+                                                                stop = .7f,
+                                                                fraction = pageOffset.absoluteValue.coerceIn(0f, 1f),
+                                                            ).let {
+                                                                scaleX = it
+                                                                scaleY = it
+                                                                val sign = if (pageOffset > 0) 1 else -1
+                                                                translationX = sign * size.width * (1 - it) / 2
+                                                            }
+                                                            val blur = (pageOffset * 20f).coerceAtLeast(.1f)
+                                                            renderEffect = BlurEffect(blur, blur, TileMode.Decal)
+                                                        }
+                                                        .background(color = Color.Transparent, shape = RoundedCornerShape(20.dp))
+                                                        .clip(RoundedCornerShape(20.dp)),
+                                                    contentAlignment = Alignment.Center,
+                                                ) {
+                                                    AsyncImage(
+                                                        modifier = Modifier
+                                                            .background(color = Color.Transparent, shape = RoundedCornerShape(20.dp))
+                                                            .clip(RoundedCornerShape(20.dp))
+                                                            .heightIn(max = 500.dp)
+                                                            .then(
+                                                                if(detailKey == "image${page + 1}")
+                                                                    Modifier.sharedBounds(
+                                                                        sharedContentState = rememberSharedContentState("image${page + 1}"),
+                                                                        animatedVisibilityScope = this@AnimatedContent,
+                                                                        enter = fadeIn(),
+                                                                        exit = fadeOut(),
+                                                                        resizeMode = SharedTransitionScope.ResizeMode.ScaleToBounds()
+                                                                    )
+                                                                else
+                                                                    Modifier
+                                                            ),
+                                                        model = ImageRequest.Builder(LocalPlatformContext.current)
+                                                            .data("${window.location.href}/asset/image${page + 1}.jpeg")
+                                                            .diskCacheKey("image${page + 1}")
+                                                            .fetcherFactory(KtorNetworkFetcherFactory())
+                                                            .build(),
+                                                        placeholder = ColorPainter(color = Color.LightGray.copy(alpha = .4f)),
+                                                        contentDescription = null,
+                                                        contentScale = ContentScale.Fit
+                                                    )
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+
                     },
                     flipController = flipController
                 ) { isFront = it != FlippableState.BACK }
@@ -226,19 +377,24 @@ private fun Cover(
     isFront: Boolean,
 ) {
     Box(modifier = modifier) {
-        Image(
+        AsyncImage(
             modifier = Modifier.fillMaxWidth(),
-            painter = painterResource(Res.drawable.cover),
+            model = Res.getUri("/drawable/cover.png"),
             contentDescription = null
         )
         SvgAnimationContainer(modifier = Modifier.matchParentSize(), isFront = isFront)
     }
 }
 
-@OptIn(ExperimentalResourceApi::class)
+@OptIn(ExperimentalResourceApi::class, ExperimentalSharedTransitionApi::class)
 @Composable
 private fun Content(
+    listState: LazyListState,
+    sharedTransitionScope: SharedTransitionScope,
+    animatedContentScope: AnimatedContentScope,
     dimension: MutableFloatState,
+    detailKey: String,
+    showDetail: (String) -> Unit,
 ) {
     val userInteracted = remember{ mutableStateOf(false) }
     val videos = remember {
@@ -252,31 +408,11 @@ private fun Content(
     val playerStates = videos.map { video ->
         val state = rememberVideoPlayerState()
         LaunchedEffect(video) {
-            state.openUri("${window.location.origin}/asset/$video")
+            state.openUri("${window.location.href}//asset/$video")
             state.volume = 0f
             state.loop = true
         }
         state
-    }
-
-    val items = remember {
-        listOf(
-            Res.drawable.test,
-            Res.drawable.test,
-            Res.drawable.test,
-            Res.drawable.test,
-            Res.drawable.test,
-            Res.drawable.test,
-            Res.drawable.test,
-            Res.drawable.test,
-            Res.drawable.test,
-            Res.drawable.test,
-            Res.drawable.test,
-            Res.drawable.test,
-            Res.drawable.test,
-            Res.drawable.test,
-            Res.drawable.test
-        )
     }
 
     val timeMillis = remember {
@@ -320,9 +456,6 @@ private fun Content(
             "" to remainTime.sec.toInt()
     }
 
-    val listState = rememberLazyListState()
-    val galleryListCount = remember { ceil(items.size / 5.toDouble()).toInt() }
-
     val mapPositionY by remember {
         derivedStateOf {
             listState.layoutInfo.visibleItemsInfo.find { it.key == "map" }?.let {
@@ -342,6 +475,7 @@ private fun Content(
         }
     }
 
+
     LazyColumn (
         modifier = Modifier.fillMaxSize(),
         state = listState,
@@ -349,10 +483,20 @@ private fun Content(
             item(
                 key = "main"
             ) {
-                Box {
-                    Image(
-                        painter = painterResource(Res.drawable.test),
-                        contentDescription = null
+                var imageLoading by remember { mutableStateOf(true) }
+                Box(
+                    modifier = Modifier.heightIn(min = 400.dp)
+                ) {
+                    AsyncImage(
+                        modifier = Modifier,
+                        model = ImageRequest.Builder(LocalPlatformContext.current)
+                            .data("${window.location.href}/asset/image1.jpeg")
+                            .diskCacheKey("image1")
+                            .fetcherFactory(KtorNetworkFetcherFactory())
+                            .build(),
+                        placeholder = ColorPainter(color = Color.LightGray.copy(alpha = .4f)),
+                        contentDescription = null,
+                        contentScale = ContentScale.Fit
                     )
                 }
             }
@@ -670,7 +814,9 @@ private fun Content(
             }
             item(key = "calendar_text") {
                 Row(
-                    modifier = Modifier.padding(12.dp),
+                    modifier = Modifier
+                        .padding(12.dp)
+                        .padding(top = 20.dp),
                     horizontalArrangement = Arrangement.spacedBy(4.dp)
                 ) {
                     Text(
@@ -816,10 +962,9 @@ private fun Content(
                                color = Color(0xFF574B40),
                                textAlign = TextAlign.Center
                            )
-                           Icon(
+                           Image(
                                modifier = Modifier.size(18.dp),
                                painter = painterResource(Res.drawable.heart),
-                               tint = Color.Black,
                                contentDescription = null
                            )
                            Text(
@@ -867,30 +1012,39 @@ private fun Content(
                 Row(
                     modifier = Modifier
                         .padding(vertical = 20.dp)
-                        .padding(top = 40.dp)
+                        .padding(top = 60.dp)
                         .fillMaxWidth(),
                     horizontalArrangement = Arrangement.Center
                 ) {
-                    Text(
-                        text = "Gallery",
-                        style = enFontFamily.bodyLarge,
-                        fontSize = 32.sp,
-                        color = Color(0xFFB76E79),
-                        textAlign = TextAlign.Center
-                    )
+                    with(sharedTransitionScope) {
+                        Text(
+                            modifier = Modifier.sharedBounds(
+                                sharedContentState = rememberSharedContentState("gallery"),
+                                animatedVisibilityScope = animatedContentScope,
+                                enter = fadeIn(),
+                                exit = fadeOut(),
+                                resizeMode = SharedTransitionScope.ResizeMode.ScaleToBounds()
+                            ),
+                            text = "Gallery",
+                            style = enFontFamily.bodyLarge,
+                            fontSize = 32.sp,
+                            color = Color(0xFFB76E79),
+                            textAlign = TextAlign.Center
+                        )
+                    }
                 }
             }
             items(
-                count = galleryListCount,
+                count = 3,
                 key = { i -> "gallery_item_$i" }
             ) { column ->
                 val isOdd = column % 2 == 1
-                val firstIndex = column * 3
-                val first =  0 to items.getOrNull(firstIndex)
-                val second = 1 to items.getOrNull(firstIndex + 1)
-                val third = 2 to items.getOrNull(firstIndex + 2)
-                val forth = 3 to items.getOrNull(firstIndex + 3)
-                val fifth = 3 to items.getOrNull(firstIndex + 4)
+                val firstIndex = (column * 3) + (column * 2)
+                val first =  firstIndex + 1
+                val second = firstIndex + 2
+                val third = firstIndex + 3
+                val forth = firstIndex + 4
+                val fifth = firstIndex + 5
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -913,15 +1067,6 @@ private fun Content(
                                     playerState = it
                                 )
                             }
-//                            fifth.second?.let {
-//                                Image(
-//                                    modifier = Modifier.fillMaxWidth(),
-//                                    painter = painterResource(it),
-//                                    contentScale = ContentScale.Crop,
-//                                    contentDescription = null
-//                                )
-//                                Text("5")
-//                            }
                         }
                     }
                     Column(
@@ -934,23 +1079,40 @@ private fun Content(
                                 horizontalArrangement = Arrangement.spacedBy(2.dp)
                             ) {
                                 repeat(2) { j ->
-                                    val item = when(i + j) {
-                                        0 -> first
-                                        1 -> second
-                                        2 -> third
-                                        else -> forth
+                                    val item = when(i) {
+                                        0 -> if(j == 0) first else second
+                                        else -> if(j == 0) third else forth
                                     }
-                                    Box(modifier = Modifier.weight(1f)) {
-                                        item.second?.let {
-                                            Image(
-                                                modifier = Modifier.aspectRatio(1f),
-                                                painter = painterResource(it),
+                                    with(sharedTransitionScope) {
+                                        Box(modifier = Modifier.weight(1f)) {
+                                            AsyncImage(
+                                                modifier = Modifier
+                                                    .clickable { showDetail.invoke("image${item}") }
+                                                    .aspectRatio(1f)
+                                                    .then(
+                                                        if(detailKey.isBlank() || detailKey == "image${item}")
+                                                            Modifier.sharedBounds(
+                                                                sharedContentState = rememberSharedContentState(key = "image${item}"),
+                                                                animatedVisibilityScope = animatedContentScope,
+                                                                enter = fadeIn(),
+                                                                exit = fadeOut(),
+                                                                resizeMode = SharedTransitionScope.ResizeMode.ScaleToBounds()
+                                                            )
+                                                        else
+                                                            Modifier
+                                                    ),
+                                                model = ImageRequest.Builder(LocalPlatformContext.current)
+                                                    .data("${window.location.href}/asset/image${item}.jpeg")
+                                                    .diskCacheKey("image${item}")
+                                                    .fetcherFactory(KtorNetworkFetcherFactory())
+                                                    .build(),
+                                                placeholder = ColorPainter(color = Color.LightGray.copy(alpha = .2f)),
                                                 contentScale = ContentScale.Crop,
                                                 contentDescription = null
                                             )
-                                            Text("${i + j}")
                                         }
                                     }
+
                                 }
                             }
                         }
@@ -967,66 +1129,17 @@ private fun Content(
                                     playerState = it
                                 )
                             }
-//                            if(playerState.isLoading)
-//                                CircularProgressIndicator()
-//                            fifth.second?.let {
-//                                Image(
-//                                    modifier = Modifier.fillMaxWidth(),
-//                                    painter = painterResource(it),
-//                                    contentScale = ContentScale.Crop,
-//                                    contentDescription = null
-//                                )
-//                                Text("5")
-//                            }
                         }
                     }
                 }
             }
-//            item(
-//                key = "gallery_more"
-//            ) {
-//                val scope = rememberCoroutineScope()
-//                Row(
-//                    modifier = Modifier
-//                        .fillMaxWidth()
-//                        .clickable {
-//                            userInteracted.value = !userInteracted.value
-//                            galleryListCount.value = if(userInteracted.value)
-//                                ceil(items.size / 5.toDouble()).toInt()
-//                            else
-//                                1
-//                            if(userInteracted.value.not()) {
-//                                scope.launch {
-//                                    listState.animateScrollToItem(6)
-//                                }
-//                            }
-//                        },
-//                    verticalAlignment = Alignment.CenterVertically,
-//                    horizontalArrangement = Arrangement.spacedBy(4.dp, Alignment.CenterHorizontally)
-//                ) {
-//                    Text(
-//                        text = "더보기",
-//                        style = fontFamily.bodyLarge,
-//                        fontSize = 18.sp,
-//                        color = Color(0xFF574B40)
-//                    )
-//                    Image(
-//                        modifier = Modifier
-//                            .rotate(0f)
-//                            .size(21.dp),
-//                        imageVector = Icons.Filled.ArrowDropDown,
-//                        contentDescription = null,
-//                        colorFilter = ColorFilter.tint(Color(0xFF574B40))
-//                    )
-//                }
-//            }
             item(
                 key = "bank_title"
             ) {
                 Row(
                     modifier = Modifier
                         .padding(vertical = 20.dp)
-                        .padding(top = 40.dp)
+                        .padding(top = 60.dp)
                         .fillMaxWidth(),
                     horizontalArrangement = Arrangement.Center
                 ) {
@@ -1290,7 +1403,7 @@ private fun Content(
                 Row(
                     modifier = Modifier
                         .padding(vertical = 20.dp)
-                        .padding(top = 40.dp)
+                        .padding(top = 60.dp)
                         .fillMaxWidth(),
                     horizontalArrangement = Arrangement.Center
                 ) {
@@ -1477,7 +1590,7 @@ fun SvgAnimationContainer(
 
     LaunchedEffect(isFront, positionX, positionY, composableWidth, composableHeight) {
         try {
-            if(composableHeight == 0)
+            if(composableHeight == 0 || composableWidth == 0)
                 return@LaunchedEffect
             if(svgContent == null)
                 svgContent = Res.readBytes("drawable/wedding_animation.svg").decodeToString()
@@ -1561,7 +1674,7 @@ fun setupSvgAnimation(isFront: Boolean, svgContent: String, height: Int) {
 private fun TimerMiddle(
     padding: Int = 3,
     middleFontSize: Int = 2,
-    color: Color = Color(0xFF574B40)
+    color: Color = Color(0xFF574B40),
 ) {
     Column(
         verticalArrangement = Arrangement.spacedBy(padding.dp, Alignment.CenterVertically)
@@ -1586,7 +1699,7 @@ private fun TimerContent(
     time: Pair<String, Int>,
     fontSize: Int = 18,
     contentColor: Color = Color.Transparent,
-    color: Color = Color(0xFF574B40)
+    color: Color = Color(0xFF574B40),
 ) {
     Surface(
         modifier = Modifier
@@ -1610,7 +1723,7 @@ private fun DdayContent(
     time: Pair<String, Int>,
     fontSize: Int = 24,
     contentColor: Color = Color(0xFFCFA8A8),
-    color: Color = Color(0xFF574B40)
+    color: Color = Color(0xFF574B40),
 ) {
     Surface(
         modifier = Modifier.fillMaxHeight(),
@@ -1630,7 +1743,7 @@ private fun DdayContent(
 @Composable
 private fun VideoPlayer(
     playerState: VideoPlayerState,
-    userInteracted: MutableState<Boolean>
+    userInteracted: MutableState<Boolean>,
 ) {
     LaunchedEffect(userInteracted.value) {
         if(userInteracted.value)
