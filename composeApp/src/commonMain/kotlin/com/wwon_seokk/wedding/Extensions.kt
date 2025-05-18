@@ -27,7 +27,7 @@ fun Long.getRemainTime(): RemainTime {
     val totalMinutes = duration.toLong(DurationUnit.MINUTES)
     val totalSeconds = duration.toLong(DurationUnit.SECONDS)
 
-    val day = totalDays + 1
+    val day = totalDays
     val hour = totalHours % 24
     val min = totalMinutes % 60
     val sec = totalSeconds % 60

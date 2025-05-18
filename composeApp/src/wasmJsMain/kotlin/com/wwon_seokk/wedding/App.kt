@@ -1794,7 +1794,8 @@ private fun VideoPlayer(
             val documentVideos: NodeList = document.querySelectorAll("video")
             for (i in 0 until documentVideos.length) {
                 val video = documentVideos[i] as HTMLVideoElement
-                video.style.transform = "rotate(180deg)"
+                if(isMobileDevice().not())
+                    video.style.transform = "rotate(180deg)"
                 video.muted = true
             }
         }
