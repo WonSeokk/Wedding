@@ -18,7 +18,8 @@ import com.wwon_seokk.wedding.fontFamily
 @Composable
 fun DigitCountText(
     modifier: Modifier = Modifier,
-    frontText: String = "",
+    frontText: String? = null,
+    backText: String? = null,
     count: Int? = null,
     countFloat: Float? = null,
     textColor: Color = Color(0xFF4B3621),
@@ -32,13 +33,15 @@ fun DigitCountText(
         horizontalArrangement = Arrangement.Center,
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Text(
-            text = frontText,
-            textAlign = textAlign,
-            style = style,
-            color = textColor,
-            fontSize = fontSize.sp
-        )
+        frontText?.let {
+            Text(
+                text = frontText,
+                textAlign = textAlign,
+                style = style,
+                color = textColor,
+                fontSize = fontSize.sp
+            )
+        }
         val digits = count?.toString()?.mapIndexed { _, c -> Digit(c, count) } ?: countFloat.toString().mapIndexed { _, c -> DigitFloat(c, countFloat!!) }
         digits.forEach { digit ->
             AnimatedContent(
@@ -60,6 +63,15 @@ fun DigitCountText(
                     fontSize = fontSize.sp
                 )
             }
+        }
+        backText?.let {
+            Text(
+                text = backText,
+                textAlign = textAlign,
+                style = style,
+                color = textColor,
+                fontSize = fontSize.sp
+            )
         }
     }
 }

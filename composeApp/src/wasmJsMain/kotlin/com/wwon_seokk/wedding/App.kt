@@ -3,6 +3,8 @@ package com.wwon_seokk.wedding
 import DigitCountText
 import Flippable
 import FlippableState
+import Media
+import Media.MediaType
 import RemainTime
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedContentScope
@@ -69,7 +71,6 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.MutableFloatState
-import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
@@ -146,6 +147,27 @@ external fun registerMapBox(elementId: String)
 const val weddingLat = 37.481504867692
 const val weddingLng = 126.79853505353
 const val zoomLevel = 16
+
+val medias = listOf(
+    Media(key = 1, type = MediaType.IMAGE, fileName = "image1"),
+    Media(key = 2, type = MediaType.IMAGE, fileName = "image2"),
+    Media(key = 3, type = MediaType.IMAGE, fileName = "image3"),
+    Media(key = 4, type = MediaType.IMAGE, fileName = "image4"),
+    Media(key = 6, type = MediaType.IMAGE, fileName = "image6"),
+    Media(key = 7, type = MediaType.IMAGE, fileName = "image7"),
+    Media(key = 8, type = MediaType.IMAGE, fileName = "image8"),
+    Media(key = 9, type = MediaType.IMAGE, fileName = "image9"),
+    Media(key = 11, type = MediaType.IMAGE, fileName = "image11"),
+    Media(key = 12, type = MediaType.IMAGE, fileName = "image12"),
+    Media(key = 13, type = MediaType.IMAGE, fileName = "image13"),
+    Media(key = 14, type = MediaType.IMAGE, fileName = "image14"),
+    Media(key = 1, type = MediaType.VIDEO, fileName = "video_content1", thumb = "video_thumb1"),
+    Media(key = 2, type = MediaType.VIDEO, fileName = "video_content2", thumb = "video_thumb2"),
+    Media(key = 3, type = MediaType.VIDEO, fileName = "video_content3", thumb = "video_thumb3"),
+)
+
+val imageMedias = medias.filter { it.type == MediaType.IMAGE }
+val videoMedias = medias.filter { it.type == MediaType.VIDEO }
 
 @OptIn(ExperimentalResourceApi::class, ExperimentalMaterial3Api::class, ExperimentalComposeUiApi::class, ExperimentalFoundationApi::class,
     ExperimentalSharedTransitionApi::class
@@ -251,10 +273,13 @@ fun App() {
                                         showDetails = true
                                     }
                                 if(it) {
-                                    val index = detailKey.split("image").last().toInt() - 1
-                                    val horizontalState = rememberPagerState(index) { 10 }
+                                    val media = imageMedias.find { it.fileName == detailKey }
+                                    val index = imageMedias.indexOf(media)
+                                    val horizontalState = rememberPagerState(index) { imageMedias.size }
                                     LaunchedEffect(horizontalState.currentPage) {
-                                        detailKey = "image${horizontalState.currentPage + 1}"
+                                        val page = horizontalState.currentPage
+                                        detailKey = imageMedias[page].fileName
+                                        println(detailKey)
                                     }
                                     Box(
                                         modifier = Modifier
@@ -329,15 +354,16 @@ fun App() {
                                                         .clip(RoundedCornerShape(20.dp)),
                                                     contentAlignment = Alignment.Center,
                                                 ) {
+                                                    val media = imageMedias[page]
                                                     AsyncImage(
                                                         modifier = Modifier
                                                             .background(color = Color.Transparent, shape = RoundedCornerShape(20.dp))
                                                             .clip(RoundedCornerShape(20.dp))
                                                             .heightIn(max = 500.dp)
                                                             .then(
-                                                                if(detailKey == "image${page + 1}")
+                                                                if(detailKey == media.fileName)
                                                                     Modifier.sharedBounds(
-                                                                        sharedContentState = rememberSharedContentState("image${page + 1}"),
+                                                                        sharedContentState = rememberSharedContentState(media.fileName),
                                                                         animatedVisibilityScope = this@AnimatedContent,
                                                                         enter = fadeIn(),
                                                                         exit = fadeOut(),
@@ -347,8 +373,8 @@ fun App() {
                                                                     Modifier
                                                             ),
                                                         model = ImageRequest.Builder(LocalPlatformContext.current)
-                                                            .data("${window.location.href}/asset/image${page + 1}.jpeg")
-                                                            .diskCacheKey("image${page + 1}")
+                                                            .data("${window.location.href}/asset/${media.fileName}.jpeg")
+                                                            .diskCacheKey(media.fileName)
                                                             .fetcherFactory(KtorNetworkFetcherFactory())
                                                             .build(),
                                                         placeholder = ColorPainter(color = Color.LightGray.copy(alpha = .4f)),
@@ -356,6 +382,19 @@ fun App() {
                                                         contentScale = ContentScale.Fit
                                                     )
                                                 }
+                                            }
+                                            Box(
+                                                modifier = Modifier
+                                                    .fillMaxWidth()
+                                                    .padding(16.dp)
+                                            ) {
+                                                DigitCountText(
+                                                    modifier = Modifier.align(Alignment.Center),
+                                                    backText = "/${imageMedias.size}",
+                                                    count = horizontalState.currentPage + 1,
+                                                    textColor = Color(0xFF574B40),
+                                                    fontSize = 20,
+                                                )
                                             }
                                         }
                                     }
@@ -396,19 +435,11 @@ private fun Content(
     detailKey: String,
     showDetail: (String) -> Unit,
 ) {
-    val userInteracted = remember{ mutableStateOf(false) }
-    val videos = remember {
-        listOf(
-            "sample.mp4",
-            "sample.mp4",
-            "sample.mp4",
-            "sample.mp4"
-        )
-    }
-    val playerStates = videos.map { video ->
+    val playerStates = (1..3).map { i ->
         val state = rememberVideoPlayerState()
-        LaunchedEffect(video) {
-            state.openUri("${window.location.href}//asset/$video")
+        LaunchedEffect(i) {
+            val filename = videoMedias.find { it.key == i }?.fileName
+            state.openUri("${window.location.href}/asset/${filename}.mp4")
             state.volume = 0f
             state.loop = true
         }
@@ -1040,11 +1071,11 @@ private fun Content(
             ) { column ->
                 val isOdd = column % 2 == 1
                 val firstIndex = (column * 3) + (column * 2)
-                val first =  firstIndex + 1
-                val second = firstIndex + 2
-                val third = firstIndex + 3
-                val forth = firstIndex + 4
-                val fifth = firstIndex + 5
+                val first = imageMedias.find { it.key == firstIndex + 1 }
+                val second = imageMedias.find { it.key == firstIndex + 2 }
+                val third = imageMedias.find { it.key == firstIndex + 3 }
+                val forth = imageMedias.find { it.key == firstIndex + 4 }
+
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -1062,10 +1093,12 @@ private fun Content(
                                 .aspectRatio(.5f)
                         ) {
                             playerStates.getOrNull(column)?.let {
-                                VideoPlayer(
-                                    userInteracted = userInteracted,
-                                    playerState = it
-                                )
+                                videoMedias.find { it.key == column + 1}?.thumb?.let { thumb ->
+                                    VideoPlayer(
+                                        thumb = thumb,
+                                        playerState = it
+                                    )
+                                }
                             }
                         }
                     }
@@ -1087,12 +1120,12 @@ private fun Content(
                                         Box(modifier = Modifier.weight(1f)) {
                                             AsyncImage(
                                                 modifier = Modifier
-                                                    .clickable { showDetail.invoke("image${item}") }
+                                                    .clickable { showDetail.invoke(item?.fileName ?: "") }
                                                     .aspectRatio(1f)
                                                     .then(
-                                                        if(detailKey.isBlank() || detailKey == "image${item}")
+                                                        if(detailKey.isBlank() || detailKey == item?.fileName)
                                                             Modifier.sharedBounds(
-                                                                sharedContentState = rememberSharedContentState(key = "image${item}"),
+                                                                sharedContentState = rememberSharedContentState(key = item?.fileName ?: ""),
                                                                 animatedVisibilityScope = animatedContentScope,
                                                                 enter = fadeIn(),
                                                                 exit = fadeOut(),
@@ -1102,8 +1135,8 @@ private fun Content(
                                                             Modifier
                                                     ),
                                                 model = ImageRequest.Builder(LocalPlatformContext.current)
-                                                    .data("${window.location.href}/asset/image${item}.jpeg")
-                                                    .diskCacheKey("image${item}")
+                                                    .data("${window.location.href}/asset/${item?.fileName}.jpeg")
+                                                    .diskCacheKey(item?.fileName)
                                                     .fetcherFactory(KtorNetworkFetcherFactory())
                                                     .build(),
                                                 placeholder = ColorPainter(color = Color.LightGray.copy(alpha = .2f)),
@@ -1124,10 +1157,12 @@ private fun Content(
                                 .aspectRatio(.5f)
                         ) {
                             playerStates.getOrNull(column)?.let {
-                                VideoPlayer(
-                                    userInteracted = userInteracted,
-                                    playerState = it
-                                )
+                                videoMedias.find { it.key == column + 1}?.thumb?.let { thumb ->
+                                    VideoPlayer(
+                                        thumb = thumb,
+                                        playerState = it
+                                    )
+                                }
                             }
                         }
                     }
@@ -1742,13 +1777,9 @@ private fun DdayContent(
 
 @Composable
 private fun VideoPlayer(
+    thumb: String,
     playerState: VideoPlayerState,
-    userInteracted: MutableState<Boolean>,
 ) {
-    LaunchedEffect(userInteracted.value) {
-        if(userInteracted.value)
-            playerState.play()
-    }
     var isReady by remember { mutableStateOf(false) }
     LaunchedEffect(Unit) {
         delay(800L)
@@ -1763,14 +1794,34 @@ private fun VideoPlayer(
             val documentVideos: NodeList = document.querySelectorAll("video")
             for (i in 0 until documentVideos.length) {
                 val video = documentVideos[i] as HTMLVideoElement
+                video.style.transform = "rotate(180deg)"
                 video.muted = true
             }
         }
-        if (isReady.not())
-            Spacer(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .background(color = Color.White)
+        if(isReady.not())
+            AsyncImage(
+                modifier = Modifier.fillMaxSize(),
+                model = ImageRequest.Builder(LocalPlatformContext.current)
+                    .data("${window.location.href}/asset/$thumb.jpg")
+                    .diskCacheKey(thumb)
+                    .fetcherFactory(KtorNetworkFetcherFactory())
+                    .build(),
+                placeholder = ColorPainter(color = Color.LightGray.copy(alpha = .2f)),
+                contentScale = ContentScale.Crop,
+                contentDescription = null
             )
     }
+}
+
+
+fun calcFileNumber(page: Int): Int {
+    val result = if((page + 1) % 5 == 0)
+        page + 2
+    else
+        page + (page / 5)
+    println("calcFileNumber: $page - $result")
+    return if(result >= 5)
+        result + (result / 5) - 1
+    else
+        result
 }

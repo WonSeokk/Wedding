@@ -1,4 +1,10 @@
 data class Media(
-    val thumb: String,
-    val url: String
-)
+    val key: Int,
+    val type: MediaType,
+    val fileName: String,
+    val thumb: String? = null
+) {
+    enum class MediaType {
+        IMAGE, VIDEO
+    }
+}
