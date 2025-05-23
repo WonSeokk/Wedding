@@ -153,17 +153,31 @@ val medias = listOf(
     Media(key = 2, type = MediaType.IMAGE, fileName = "image2"),
     Media(key = 3, type = MediaType.IMAGE, fileName = "image3"),
     Media(key = 4, type = MediaType.IMAGE, fileName = "image4"),
-    Media(key = 6, type = MediaType.IMAGE, fileName = "image6"),
-    Media(key = 7, type = MediaType.IMAGE, fileName = "image7"),
-    Media(key = 8, type = MediaType.IMAGE, fileName = "image8"),
-    Media(key = 9, type = MediaType.IMAGE, fileName = "image9"),
-    Media(key = 11, type = MediaType.IMAGE, fileName = "image11"),
-    Media(key = 12, type = MediaType.IMAGE, fileName = "image12"),
-    Media(key = 13, type = MediaType.IMAGE, fileName = "image13"),
-    Media(key = 14, type = MediaType.IMAGE, fileName = "image14"),
+    Media(key = 6, type = MediaType.IMAGE, fileName = "image5"),
+    Media(key = 7, type = MediaType.IMAGE, fileName = "image6"),
+    Media(key = 8, type = MediaType.IMAGE, fileName = "image7"),
+    Media(key = 9, type = MediaType.IMAGE, fileName = "image8"),
+    Media(key = 11, type = MediaType.IMAGE, fileName = "image9"),
+    Media(key = 12, type = MediaType.IMAGE, fileName = "image10"),
+    Media(key = 13, type = MediaType.IMAGE, fileName = "image11"),
+    Media(key = 14, type = MediaType.IMAGE, fileName = "image12"),
+    Media(key = 16, type = MediaType.IMAGE, fileName = "image13"),
+    Media(key = 17, type = MediaType.IMAGE, fileName = "image14"),
+    Media(key = 18, type = MediaType.IMAGE, fileName = "image15"),
+    Media(key = 19, type = MediaType.IMAGE, fileName = "image16"),
+    Media(key = 21, type = MediaType.IMAGE, fileName = "image17"),
+    Media(key = 22, type = MediaType.IMAGE, fileName = "image18"),
+    Media(key = 23, type = MediaType.IMAGE, fileName = "image19"),
+    Media(key = 24, type = MediaType.IMAGE, fileName = "image20"),
+    Media(key = 26, type = MediaType.IMAGE, fileName = "image21"),
+    Media(key = 27, type = MediaType.IMAGE, fileName = "image22"),
+    Media(key = 28, type = MediaType.IMAGE, fileName = "image23"),
+    Media(key = 29, type = MediaType.IMAGE, fileName = "image24"),
     Media(key = 1, type = MediaType.VIDEO, fileName = "video_content1", thumb = "video_thumb1"),
     Media(key = 2, type = MediaType.VIDEO, fileName = "video_content2", thumb = "video_thumb2"),
     Media(key = 3, type = MediaType.VIDEO, fileName = "video_content3", thumb = "video_thumb3"),
+    Media(key = 4, type = MediaType.VIDEO, fileName = "video_content4", thumb = "video_thumb4"),
+    Media(key = 5, type = MediaType.VIDEO, fileName = "video_content5", thumb = "video_thumb5"),
 )
 
 val imageMedias = medias.filter { it.type == MediaType.IMAGE }
@@ -373,7 +387,7 @@ fun App() {
                                                                     Modifier
                                                             ),
                                                         model = ImageRequest.Builder(LocalPlatformContext.current)
-                                                            .data("${window.location.href}/asset/${media.fileName}.jpeg")
+                                                            .data("${window.location.href}/asset/${media.fileName}.jpg")
                                                             .diskCacheKey(media.fileName)
                                                             .fetcherFactory(KtorNetworkFetcherFactory())
                                                             .build(),
@@ -435,7 +449,7 @@ private fun Content(
     detailKey: String,
     showDetail: (String) -> Unit,
 ) {
-    val playerStates = (1..3).map { i ->
+    val playerStates = (1..5).map { i ->
         val state = rememberVideoPlayerState()
         LaunchedEffect(i) {
             val filename = videoMedias.find { it.key == i }?.fileName
@@ -521,7 +535,7 @@ private fun Content(
                     AsyncImage(
                         modifier = Modifier,
                         model = ImageRequest.Builder(LocalPlatformContext.current)
-                            .data("${window.location.href}/asset/image1.jpeg")
+                            .data("${window.location.href}/asset/image1.jpg")
                             .diskCacheKey("image1")
                             .fetcherFactory(KtorNetworkFetcherFactory())
                             .build(),
@@ -1066,7 +1080,7 @@ private fun Content(
                 }
             }
             items(
-                count = 3,
+                count = 5,
                 key = { i -> "gallery_item_$i" }
             ) { column ->
                 val isOdd = column % 2 == 1
@@ -1135,7 +1149,7 @@ private fun Content(
                                                             Modifier
                                                     ),
                                                 model = ImageRequest.Builder(LocalPlatformContext.current)
-                                                    .data("${window.location.href}/asset/${item?.fileName}.jpeg")
+                                                    .data("${window.location.href}/asset/${item?.fileName}.jpg")
                                                     .diskCacheKey(item?.fileName)
                                                     .fetcherFactory(KtorNetworkFetcherFactory())
                                                     .build(),
@@ -1781,21 +1795,29 @@ private fun VideoPlayer(
     playerState: VideoPlayerState,
 ) {
     var isReady by remember { mutableStateOf(false) }
-    LaunchedEffect(Unit) {
-        delay(800L)
-        isReady = true
+    LaunchedEffect(isReady) {
+        if(playerState.isPlaying.not())
+            playerState.play()
+    }
+    LaunchedEffect(playerState.isPlaying) {
+        if(playerState.isPlaying) {
+            delay(600)
+            isReady = true
+        } else
+            isReady = false
+    }
+    DisposableEffect(Unit) {
+        onDispose { isReady = false }
     }
     VideoPlayerSurface(
         modifier = Modifier.fillMaxSize(),
         playerState = playerState,
-        contentScale = ContentScale.FillBounds
+        contentScale = ContentScale.Crop
     ) {
         LaunchedEffect(Unit) {
             val documentVideos: NodeList = document.querySelectorAll("video")
             for (i in 0 until documentVideos.length) {
                 val video = documentVideos[i] as HTMLVideoElement
-                if(isMobileDevice().not())
-                    video.style.transform = "rotate(180deg)"
                 video.muted = true
             }
         }

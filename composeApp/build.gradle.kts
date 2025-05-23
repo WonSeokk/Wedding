@@ -47,7 +47,7 @@ kotlin {
             implementation(libs.coil)
             implementation(libs.coil.network)
             implementation("org.jetbrains.kotlinx:kotlinx-datetime:0.6.2")
-            implementation("io.github.kdroidfilter:composemediaplayer:0.7.3")
+            implementation("io.github.kdroidfilter:composemediaplayer:0.7.4")
         }
 
         jsMain.dependencies {
