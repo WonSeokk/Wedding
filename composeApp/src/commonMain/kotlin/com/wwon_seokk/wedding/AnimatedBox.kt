@@ -26,13 +26,13 @@ fun AnimatedBox(
 
     val alpha by animateFloatAsState(
         targetValue = if (appeared) 1f else 0f,
-        animationSpec = tween(durationMillis = 1000, delayMillis = 200),
+        animationSpec = tween(durationMillis = 800, delayMillis = 50),
         label = "alphaAnimation"
     )
 
     val offsetY by animateFloatAsState(
         targetValue = if (appeared) 0f else 50f,
-        animationSpec = tween(durationMillis = 1000, delayMillis = 200),
+        animationSpec = tween(durationMillis = 800, delayMillis = 50),
         label = "offsetYAnimation"
     )
 
