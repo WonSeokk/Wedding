@@ -76,7 +76,7 @@ fun LikeSection(
                 },
                 onUpdate = {
                     scope.launch {
-                        blessingCount = getLikeCount("heart").await<JsNumber>().toInt()
+                        blessingCount = getLikeCount("blessing").await<JsNumber>().toInt()
                     }
                 }
             )
