@@ -13,6 +13,83 @@
     <title>Wedding</title>
     <link type="text/css" rel="stylesheet" href="styles.css">
     <script type="text/javascript" src="https://oapi.map.naver.com/openapi/v3/maps.js?ncpKeyId=wxw24lbmdq"></script>
+    
+    <!-- Firebase SDK for Like Counter -->
+    <script type="module">
+        import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.13.0/firebase-app.js';
+        import { getDatabase, ref, get, runTransaction } from 'https://www.gstatic.com/firebasejs/10.13.0/firebase-database.js';
+        
+        const firebaseConfig = {
+            apiKey: "AIzaSyCo7Rlk1cFF4GYoQ77IX4LlnuikLk1BqMM",
+            authDomain: "wedding-eb136.firebaseapp.com",
+            databaseURL: "https://wedding-eb136-default-rtdb.firebaseio.com",
+            projectId: "wedding-eb136",
+            storageBucket: "wedding-eb136.firebasestorage.app",
+            messagingSenderId: "1062632256733",
+            appId: "1:1062632256733:web:455ad524d58f9205e2d734",
+            measurementId: "G-V4P5QL75PK"
+          };
+        
+        const app = initializeApp(firebaseConfig);
+        const database = getDatabase(app);
+        
+        // 좋아요 카운트 증가
+        window.incrementLike = async (type) => {
+            try {
+                const likeRef = ref(database, `likes/${type}`);
+                await runTransaction(likeRef, (currentCount) => {
+                    return (currentCount || 0) + 1;
+                });
+                return true;
+            } catch (error) {
+                console.error('Like increment error:', error);
+                return false;
+            }
+        };
+        
+        // 좋아요 카운트 읽기
+        window.getLikeCount = async (type) => {
+            try {
+                const likeRef = ref(database, `likes/${type}`);
+                const snapshot = await get(likeRef);
+                if (snapshot.exists()) {
+                    console.log("No data available for snapshot:", snapshot.val());
+                    return snapshot.val();
+                } else {
+                    console.log("No data available for type:", type);
+                    return 0; // Return 0 if no data
+                }
+            } catch (error) {
+                console.error('Like count read error:', error);
+                return 0;
+            }
+        };
+
+        window.incrementDailyVisit = async () => {
+            try {
+                // 특정 시간대(KST)로 날짜를 생성하기 위한 라이브러리 (예: moment-timezone, date-fns-tz) 사용 권장
+                // 여기서는 간단하게 로컬 서버 시간을 가정
+                const today = new Date();
+                const year = today.getFullYear();
+                const month = String(today.getMonth() + 1).padStart(2, '0');
+                const day = String(today.getDate()).padStart(2, '0');
+                const dateString = `${year}-${month}-${day}`;
+
+                const visitCountRef = ref(database, `visits/${dateString}/count`);
+
+                await runTransaction(visitCountRef, (currentCount) => {
+                    return (currentCount || 0) + 1;
+                });
+                return true;
+            } catch (error) {
+                console.error('Daily visit increment error:', error);
+                return false;
+            }
+        };
+        
+        console.log('Firebase Like Counter initialized');
+    </script>
+    
     <script type="text/javascript">
         var weddingMap = null;
         var isMapVisible = false;

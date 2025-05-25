@@ -4,6 +4,7 @@ import AnimatedBox
 import DigitCountText
 import Flippable
 import FlippableState
+import FloatingIconEffect
 import Media
 import Media.MediaType
 import RemainTime
@@ -74,6 +75,7 @@ import androidx.compose.runtime.MutableFloatState
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -113,6 +115,7 @@ import kotlin.math.absoluteValue
 import kotlinx.browser.document
 import kotlinx.browser.window
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.await
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.datetime.LocalDate
@@ -195,6 +198,8 @@ val videoMedias = medias.filter { it.type == MediaType.VIDEO }
 fun App() {
     MaterialTheme {
         val context = LocalPlatformContext.current
+        var heartCount by remember { mutableIntStateOf(0) }
+        var blessingCount by remember { mutableIntStateOf(0) }
         var isLoading by remember { mutableStateOf(false) }
         val request = remember {
             ImageRequest.Builder(context)
@@ -208,11 +213,15 @@ fun App() {
             registerMapBox("map-box")
             initNaverMap("map-container", weddingLat, weddingLng, zoomLevel)
             ImageLoader(context).execute(request)
+            heartCount = getLikeCount("heart").await<JsNumber>().toInt()
+            blessingCount = getLikeCount("blessing").await<JsNumber>().toInt()
+            incrementDailyVisit()
         }
         val dimension = remember { mutableFloatStateOf(2f) }
         val flipController = rememberFlipController()
         var isFront by remember { mutableStateOf(false) }
         var isCoverBackground by remember { mutableStateOf(true) }
+
         LaunchedEffect(isLoading) {
             if(isLoading) {
                 isFront = true
@@ -297,6 +306,8 @@ fun App() {
                             AnimatedContent(showDetails) {
                                 if(!it)
                                     Content(
+                                        heartCount = heartCount,
+                                        blessingCount = blessingCount,
                                         listState = listState,
                                         sharedTransitionScope = this@SharedTransitionLayout,
                                         animatedContentScope = this@AnimatedContent,
@@ -463,6 +474,8 @@ private fun Cover(
 @OptIn(ExperimentalResourceApi::class, ExperimentalSharedTransitionApi::class)
 @Composable
 private fun Content(
+    heartCount: Int,
+    blessingCount: Int,
     listState: LazyListState,
     sharedTransitionScope: SharedTransitionScope,
     animatedContentScope: AnimatedContentScope,
@@ -1228,6 +1241,17 @@ private fun Content(
                     }
                 }
             }
+            item(key = "like") {
+                AnimatedBox {
+                    LikeSection(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(top = 4.dp),
+                        heartCount = heartCount,
+                        blessingCount = blessingCount
+                    )
+                }
+            }
             item(
                 key = "bank_title"
             ) {
@@ -1538,12 +1562,19 @@ private fun Content(
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(top = 8.dp),
+                        .padding(vertical = 16.dp),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
+                    Text(
+                        text = "경기도 부천시 소사구 소사본동 65-7(경인로 386)",
+                        style = fontFamily.bodyLarge,
+                        fontSize = 14.sp,
+                        color = Color(0xFF574B40),
+                        textAlign = TextAlign.Center
+                    )
                     Row(horizontalArrangement = Arrangement.spacedBy(2.dp)) {
                         Text(
-                            text = "경기도 부천시 소사구 소사본동 65-7(경인로 386)",
+                            text = "MJ컨벤션 그랜드볼룸 5층",
                             style = fontFamily.bodyLarge,
                             fontSize = 14.sp,
                             color = Color(0xFF574B40),
@@ -1562,13 +1593,6 @@ private fun Content(
                             color = Color(0xFF574B40)
                         )
                     }
-                    Text(
-                        text = "MJ컨벤션 그랜드볼룸 5층",
-                        style = fontFamily.bodyLarge,
-                        fontSize = 14.sp,
-                        color = Color(0xFF574B40),
-                        textAlign = TextAlign.Center
-                    )
                 }
             }
             item(
@@ -1850,31 +1874,6 @@ fun setupSvgAnimation(isFront: Boolean, svgContent: String, height: Int) {
 }
 
 
-
-@Composable
-private fun TimerMiddle(
-    padding: Int = 3,
-    middleFontSize: Int = 2,
-    color: Color = Color(0xFF574B40),
-) {
-    Column(
-        verticalArrangement = Arrangement.spacedBy(padding.dp, Alignment.CenterVertically)
-    ) {
-        Spacer(
-            modifier = Modifier
-                .size(middleFontSize.dp)
-                .clip(CircleShape)
-                .background(color = color)
-        )
-        Spacer(
-            modifier = Modifier
-                .size(middleFontSize.dp)
-                .clip(CircleShape)
-                .background(color = color)
-        )
-    }
-}
-
 @Composable
 private fun TimerContent(
     time: Pair<String, Int>,
@@ -1953,15 +1952,3 @@ private fun VideoPlayer(
     }
 }
 
-
-fun calcFileNumber(page: Int): Int {
-    val result = if((page + 1) % 5 == 0)
-        page + 2
-    else
-        page + (page / 5)
-    println("calcFileNumber: $page - $result")
-    return if(result >= 5)
-        result + (result / 5) - 1
-    else
-        result
-}

@@ -1,4 +1,3 @@
-import org.jetbrains.compose.ExperimentalComposeLibrary
 import org.jetbrains.kotlin.gradle.ExperimentalWasmDsl
 import org.jetbrains.kotlin.gradle.targets.js.webpack.KotlinWebpackConfig
 
@@ -31,7 +30,6 @@ kotlin {
     }
     
     sourceSets {
-        
         commonMain.dependencies {
             implementation(compose.runtime)
             implementation(compose.foundation)
@@ -48,11 +46,6 @@ kotlin {
             implementation(libs.coil.network)
             implementation("org.jetbrains.kotlinx:kotlinx-datetime:0.6.2")
             implementation("io.github.kdroidfilter:composemediaplayer:0.7.4")
-        }
-
-        jsMain.dependencies {
-            implementation(compose.desktop.currentOs)
-            implementation(libs.ktor.engine.js)
         }
     }
 }
