@@ -64,7 +64,6 @@ import androidx.compose.material3.LocalAbsoluteTonalElevation
 import androidx.compose.material3.LocalRippleConfiguration
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.RippleConfiguration
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
@@ -98,6 +97,7 @@ import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.util.lerp
+import coil3.ImageLoader
 import coil3.compose.AsyncImage
 import coil3.compose.LocalPlatformContext
 import coil3.network.ktor3.KtorNetworkFetcherFactory
@@ -148,6 +148,8 @@ const val weddingLat = 37.481504867692
 const val weddingLng = 126.79853505353
 const val zoomLevel = 16
 
+private val ktorFactory by lazy { KtorNetworkFetcherFactory() }
+
 val medias = listOf(
     Media(key = 1, type = MediaType.IMAGE, fileName = "image1"),
     Media(key = 2, type = MediaType.IMAGE, fileName = "image2"),
@@ -174,10 +176,11 @@ val medias = listOf(
     Media(key = 28, type = MediaType.IMAGE, fileName = "image23"),
     Media(key = 29, type = MediaType.IMAGE, fileName = "image24"),
     Media(key = 1, type = MediaType.VIDEO, fileName = "video_content1", thumb = "video_thumb1"),
-    Media(key = 2, type = MediaType.VIDEO, fileName = "video_content2", thumb = "video_thumb2"),
+    Media(key = 6, type = MediaType.VIDEO, fileName = "video_content2", thumb = "video_thumb2"),
     Media(key = 3, type = MediaType.VIDEO, fileName = "video_content3", thumb = "video_thumb3"),
     Media(key = 4, type = MediaType.VIDEO, fileName = "video_content4", thumb = "video_thumb4"),
     Media(key = 5, type = MediaType.VIDEO, fileName = "video_content5", thumb = "video_thumb5"),
+    Media(key = 2, type = MediaType.VIDEO, fileName = "video_content6", thumb = "video_thumb6"),
 )
 
 val imageMedias = medias.filter { it.type == MediaType.IMAGE }
@@ -189,17 +192,32 @@ val videoMedias = medias.filter { it.type == MediaType.VIDEO }
 @Composable
 fun App() {
     MaterialTheme {
+        val context = LocalPlatformContext.current
+        var isLoading by remember { mutableStateOf(false) }
+        val request = remember {
+            ImageRequest.Builder(context)
+                .data("${window.location.href}/asset/image1.jpg")
+                .diskCacheKey("image1")
+                .fetcherFactory(ktorFactory)
+                .listener(onSuccess = { _, result -> isLoading = true })
+                .build()
+        }
         LaunchedEffect(Unit) {
             registerMapBox("map-box")
             initNaverMap("map-container", weddingLat, weddingLng, zoomLevel)
+            ImageLoader(context).execute(request)
         }
         val dimension = remember { mutableFloatStateOf(2f) }
         val flipController = rememberFlipController()
-        var isFront by remember { mutableStateOf(true) }
+        var isFront by remember { mutableStateOf(false) }
         var isCoverBackground by remember { mutableStateOf(true) }
-        LaunchedEffect(Unit) {
-            delay(3800)
-            isCoverBackground = false
+        LaunchedEffect(isLoading) {
+            if(isLoading) {
+                isFront = true
+                delay(3800)
+                flipController.flipToBack()
+                isCoverBackground = false
+            }
         }
 
         CompositionLocalProvider(
@@ -243,11 +261,12 @@ fun App() {
                         .width(400.dp)
                         .fillMaxHeight()
                         .align(Alignment.Center),
+                    autoFlip = false,
                     frontSide = {
                         Cover(isFront = isFront)
                     },
                     backSide = {
-                        if(isCoverBackground) {
+                        if(isLoading.not() || isCoverBackground) {
                             val playerState = rememberVideoPlayerState()
                             LaunchedEffect(Unit) {
                                 playerState.openUri("${window.location.href}/asset/snow.mp4")
@@ -389,7 +408,7 @@ fun App() {
                                                         model = ImageRequest.Builder(LocalPlatformContext.current)
                                                             .data("${window.location.href}/asset/${media.fileName}.jpg")
                                                             .diskCacheKey(media.fileName)
-                                                            .fetcherFactory(KtorNetworkFetcherFactory())
+                                                            .fetcherFactory(ktorFactory)
                                                             .build(),
                                                         placeholder = ColorPainter(color = Color.LightGray.copy(alpha = .4f)),
                                                         contentDescription = null,
@@ -449,7 +468,7 @@ private fun Content(
     detailKey: String,
     showDetail: (String) -> Unit,
 ) {
-    val playerStates = (1..5).map { i ->
+    val playerStates = (1..videoMedias.size).map { i ->
         val state = rememberVideoPlayerState()
         LaunchedEffect(i) {
             val filename = videoMedias.find { it.key == i }?.fileName
@@ -465,11 +484,18 @@ private fun Content(
         val instant = date.toInstant(TimeZone.UTC)
         instant.toEpochMilliseconds()
     }
+    val dayMillis = remember {
+        val date = LocalDateTime.parse("2025-08-29T15:00:00")
+        val instant = date.toInstant(TimeZone.UTC)
+        instant.toEpochMilliseconds()
+    }
+    var remainDay: RemainTime by remember { mutableStateOf(RemainTime())}
     var remainTime: RemainTime by remember { mutableStateOf(RemainTime())}
     LaunchedEffect(Unit) {
         launch(Dispatchers.Default) {
             while(true) {
                 remainTime = timeMillis.getRemainTime()
+                remainDay = dayMillis.getRemainTime()
                 delay(1000L)
             }
         }
@@ -537,7 +563,7 @@ private fun Content(
                         model = ImageRequest.Builder(LocalPlatformContext.current)
                             .data("${window.location.href}/asset/image1.jpg")
                             .diskCacheKey("image1")
-                            .fetcherFactory(KtorNetworkFetcherFactory())
+                            .fetcherFactory(ktorFactory)
                             .build(),
                         placeholder = ColorPainter(color = Color.LightGray.copy(alpha = .4f)),
                         contentDescription = null,
@@ -551,7 +577,7 @@ private fun Content(
                 Column(
                     modifier = Modifier
                         .padding(vertical = 20.dp)
-                        .padding(top = 40.dp, bottom = 12.dp)
+                        .padding(top = 60.dp, bottom = 12.dp)
                         .fillMaxWidth(),
                     verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
@@ -576,6 +602,7 @@ private fun Content(
                         style = fontFamily.bodyLarge,
                         fontSize = 14.sp,
                         color = Color(0xFF574B40),
+                        lineHeight = 36.sp,
                         textAlign = TextAlign.Center
                     )
                 }
@@ -861,7 +888,7 @@ private fun Content(
                 Row(
                     modifier = Modifier
                         .padding(12.dp)
-                        .padding(top = 20.dp),
+                        .padding(top = 40.dp),
                     horizontalArrangement = Arrangement.spacedBy(4.dp)
                 ) {
                     Text(
@@ -1007,7 +1034,7 @@ private fun Content(
                                color = Color(0xFF574B40),
                                textAlign = TextAlign.Center
                            )
-                           Image(
+                           Icon(
                                modifier = Modifier.size(18.dp),
                                painter = painterResource(Res.drawable.heart),
                                contentDescription = null
@@ -1029,23 +1056,20 @@ private fun Content(
                             textAlign = TextAlign.Center
                         )
                     }
-                    Row(
-                        verticalAlignment = Alignment.Bottom,
-                        horizontalArrangement = Arrangement.spacedBy(4.dp, Alignment.CenterHorizontally)
+                    Column(
+                        verticalArrangement = Arrangement.spacedBy(1.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally
                     ) {
-                        DdayContent(time = "D-" to remainTime.day)
+                        DdayContent(time = "D-" to remainDay.day)
                         Row(
-                            modifier = Modifier.height(28.dp),
                             verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(1.dp, Alignment.CenterHorizontally)
+                            horizontalArrangement = Arrangement.spacedBy(4.dp, Alignment.CenterHorizontally)
                         ) {
                             hour?.let {
-                                TimerContent(time = hour)
-                                TimerMiddle()
+                                TimerContent(time = hour, backText = "시간")
                             }
-                            TimerContent(time = min)
-                            TimerMiddle()
-                            TimerContent(time = sec)
+                            TimerContent(time = min, backText = "분")
+                            TimerContent(time = sec, backText = "초 남음")
                         }
                     }
                 }
@@ -1057,7 +1081,7 @@ private fun Content(
                 Row(
                     modifier = Modifier
                         .padding(vertical = 20.dp)
-                        .padding(top = 60.dp)
+                        .padding(top = 80.dp)
                         .fillMaxWidth(),
                     horizontalArrangement = Arrangement.Center
                 ) {
@@ -1080,7 +1104,7 @@ private fun Content(
                 }
             }
             items(
-                count = 5,
+                count = 6,
                 key = { i -> "gallery_item_$i" }
             ) { column ->
                 val isOdd = column % 2 == 1
@@ -1151,7 +1175,7 @@ private fun Content(
                                                 model = ImageRequest.Builder(LocalPlatformContext.current)
                                                     .data("${window.location.href}/asset/${item?.fileName}.jpg")
                                                     .diskCacheKey(item?.fileName)
-                                                    .fetcherFactory(KtorNetworkFetcherFactory())
+                                                    .fetcherFactory(ktorFactory)
                                                     .build(),
                                                 placeholder = ColorPainter(color = Color.LightGray.copy(alpha = .2f)),
                                                 contentScale = ContentScale.Crop,
@@ -1188,7 +1212,7 @@ private fun Content(
                 Row(
                     modifier = Modifier
                         .padding(vertical = 20.dp)
-                        .padding(top = 60.dp)
+                        .padding(top = 80.dp)
                         .fillMaxWidth(),
                     horizontalArrangement = Arrangement.Center
                 ) {
@@ -1252,7 +1276,9 @@ private fun Content(
                     verticalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
                     Row(
-                        modifier = Modifier.clickable { isGroomOpened = !isGroomOpened },
+                        modifier = Modifier
+                            .clickable { isGroomOpened = !isGroomOpened }
+                            .align(Alignment.CenterHorizontally),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Text(
@@ -1348,7 +1374,9 @@ private fun Content(
                         }
                     }
                     Row(
-                        modifier = Modifier.clickable { isBrideOpened = !isBrideOpened },
+                        modifier = Modifier
+                            .clickable { isBrideOpened = !isBrideOpened }
+                            .align(Alignment.CenterHorizontally),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Text(
@@ -1452,7 +1480,7 @@ private fun Content(
                 Row(
                     modifier = Modifier
                         .padding(vertical = 20.dp)
-                        .padding(top = 60.dp)
+                        .padding(top = 80.dp)
                         .fillMaxWidth(),
                     horizontalArrangement = Arrangement.Center
                 ) {
@@ -1474,6 +1502,45 @@ private fun Content(
                         .height(300.dp)
                         .padding(horizontal = 20.dp)
                 )
+            }
+            item(
+                key = "map_location"
+            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 8.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Row(horizontalArrangement = Arrangement.spacedBy(2.dp)) {
+                        Text(
+                            text = "경기도 부천시 소사구 소사본동 65-7(경인로 386)",
+                            style = fontFamily.bodyLarge,
+                            fontSize = 14.sp,
+                            color = Color(0xFF574B40),
+                            textAlign = TextAlign.Center
+                        )
+                        Text(
+                            modifier = Modifier
+                                .align(Alignment.Bottom)
+                                .clickable {
+                                    window.navigator.clipboard.writeText("경기도 부천시 소사구 소사본동 65-7")
+                                    window.alert("[경기도 부천시 소사구 소사본동 65-7]\n복사 완료")
+                                },
+                            text = "주소복사",
+                            style = fontFamily.bodyLarge,
+                            fontSize = 10.sp,
+                            color = Color(0xFF574B40)
+                        )
+                    }
+                    Text(
+                        text = "MJ컨벤션 그랜드볼룸 5층",
+                        style = fontFamily.bodyLarge,
+                        fontSize = 14.sp,
+                        color = Color(0xFF574B40),
+                        textAlign = TextAlign.Center
+                    )
+                }
             }
             item(
                 key = "map_direct"
@@ -1587,35 +1654,69 @@ private fun Content(
                 }
             }
             item(
-                key = "map_location"
+                key = "map_location_guide"
             ) {
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(top = 16.dp, bottom = 32.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally
+                        .padding(horizontal = 28.dp),
+                    verticalArrangement = Arrangement.spacedBy(20.dp)
                 ) {
-                    Text(
-                        text = "경기도 부천시 소사구 소사본동 65-7",
-                        style = fontFamily.bodyLarge,
-                        fontSize = 14.sp,
-                        color = Color(0xFF574B40),
-                        textAlign = TextAlign.Center
-                    )
-                    Text(
-                        text = "MJ컨벤션 그랜드볼룸",
-                        style = fontFamily.bodyLarge,
-                        fontSize = 14.sp,
-                        color = Color(0xFF574B40),
-                        textAlign = TextAlign.Center
-                    )
+                    Column(modifier = Modifier.fillMaxWidth()) {
+                        Text(
+                            text = "지하철",
+                            style = fontFamily.bodyLarge,
+                            fontSize = 13.sp,
+                            color = Color(0xFFB76E79)
+                        )
+                        Text(
+                            text = "1호선, 서해선 > 소사역 1번출구 건너편 좌측(70m)",
+                            style = fontFamily.bodyLarge,
+                            fontSize = 13.sp,
+                            color = Color(0xFF574B40)
+                        )
+                    }
+                    Column(modifier = Modifier.fillMaxWidth()) {
+                        Text(
+                            text = "버스",
+                            style = fontFamily.bodyLarge,
+                            fontSize = 13.sp,
+                            color = Color(0xFFB76E79)
+                        )
+                        Text(
+                            text = "소사구청삼거리·MJ 컨벤션: 19, 83, 88\n" +
+                                "소사구청삼거리: 53, 60-1\n" +
+                                "소사역: 19, 53, 83, 88\n" +
+                                "소사 푸르지오: 56, 56-1, 60",
+                            style = fontFamily.bodyLarge,
+                            fontSize = 13.sp,
+                            color = Color(0xFF574B40)
+                        )
+                    }
+                    Column(modifier = Modifier.fillMaxWidth()) {
+                        Text(
+                            text = "자가용",
+                            style = fontFamily.bodyLarge,
+                            fontSize = 13.sp,
+                            color = Color(0xFFB76E79)
+                        )
+                        Text(
+                            text = "본관 및 주차타워 이용 가능 (2시간 주차 무료)\n" +
+                                "소사구청 주차장 무료 이용 가능 (도보 2분)",
+                            style = fontFamily.bodyLarge,
+                            fontSize = 13.sp,
+                            color = Color(0xFF574B40)
+                        )
+                    }
                 }
             }
-            if(dimension.floatValue > 2f) {
-                item(
-                    key = "spacer"
-                ) {
-                    Spacer(modifier = Modifier.height(100.dp * (dimension.floatValue - 2)))
+            item(
+                key = "spacer"
+            ) {
+                if(dimension.floatValue > 2f) {
+                    Spacer(modifier = Modifier.height(80.dp * (dimension.floatValue - 2)))
+                } else {
+                    Spacer(modifier = Modifier.height(50.dp))
                 }
             }
         }
@@ -1746,47 +1847,32 @@ private fun TimerMiddle(
 @Composable
 private fun TimerContent(
     time: Pair<String, Int>,
-    fontSize: Int = 18,
-    contentColor: Color = Color.Transparent,
+    fontSize: Int = 15,
+    backText: String,
     color: Color = Color(0xFF574B40),
 ) {
-    Surface(
-        modifier = Modifier
-            .fillMaxHeight()
-            .aspectRatio(1f),
-        shape = RoundedCornerShape(7.dp),
-        color = contentColor
-    ) {
-        DigitCountText(
-            modifier = Modifier.fillMaxWidth(),
-            frontText = time.first,
-            count = time.second,
-            textColor = color,
-            fontSize = fontSize,
-        )
-    }
+    DigitCountText(
+        frontText = time.first,
+        count = time.second,
+        backText = backText,
+        textColor = color,
+        fontSize = fontSize,
+    )
 }
 
 @Composable
 private fun DdayContent(
     time: Pair<String, Int>,
-    fontSize: Int = 24,
-    contentColor: Color = Color(0xFFCFA8A8),
-    color: Color = Color(0xFF574B40),
+    fontSize: Int = 28,
+    color: Color = Color(0xFFB76E79),
 ) {
-    Surface(
-        modifier = Modifier.fillMaxHeight(),
-        shape = RoundedCornerShape(7.dp),
-        color = contentColor.copy(alpha = .4f)
-    ) {
-        DigitCountText(
-            modifier = Modifier.padding(vertical = 4.dp, horizontal = 8.dp),
-            frontText = time.first,
-            count = time.second,
-            textColor = color,
-            fontSize = fontSize,
-        )
-    }
+    DigitCountText(
+        modifier = Modifier.padding(vertical = 4.dp, horizontal = 8.dp),
+        frontText = time.first,
+        count = time.second,
+        textColor = color,
+        fontSize = fontSize,
+    )
 }
 
 @Composable
@@ -1827,7 +1913,7 @@ private fun VideoPlayer(
                 model = ImageRequest.Builder(LocalPlatformContext.current)
                     .data("${window.location.href}/asset/$thumb.jpg")
                     .diskCacheKey(thumb)
-                    .fetcherFactory(KtorNetworkFetcherFactory())
+                    .fetcherFactory(ktorFactory)
                     .build(),
                 placeholder = ColorPainter(color = Color.LightGray.copy(alpha = .2f)),
                 contentScale = ContentScale.Crop,
