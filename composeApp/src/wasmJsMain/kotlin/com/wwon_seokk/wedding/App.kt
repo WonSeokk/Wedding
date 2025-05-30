@@ -105,6 +105,8 @@ import coil3.compose.AsyncImage
 import coil3.compose.LocalPlatformContext
 import coil3.network.ktor3.KtorNetworkFetcherFactory
 import coil3.request.ImageRequest
+import coil3.request.maxBitmapSize
+import coil3.size.Size
 import getRemainTime
 import io.github.kdroidfilter.composemediaplayer.VideoPlayerState
 import io.github.kdroidfilter.composemediaplayer.VideoPlayerSurface
@@ -423,6 +425,7 @@ fun App() {
                                                             .data("${window.location.href}/asset/${media.fileName}_org.jpg")
                                                             .memoryCacheKey("${media.fileName}_org")
                                                             .diskCacheKey("${media.fileName}_org")
+                                                            .maxBitmapSize(Size.ORIGINAL)
                                                             .fetcherFactory(ktorFactory)
                                                             .build(),
                                                         placeholder = ColorPainter(color = Color.LightGray.copy(alpha = .4f)),
