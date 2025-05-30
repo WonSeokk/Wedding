@@ -1284,7 +1284,8 @@ private fun Content(
                         modifier = Modifier
                             .padding(bottom = 20.dp)
                             .fillMaxWidth(),
-                        text = "보내주신 따뜻한 마음 잊지 않고\n행복하게 잘 살겠습니다",
+                        text = "보내주신 마음에 깊이 감사드립니다\n" +
+                            "축하해주신 마음 소중히 간직하겠습니다",
                         style = fontFamily.bodyLarge,
                         fontSize = 16.sp,
                         color = Color(0xFF574B40),
