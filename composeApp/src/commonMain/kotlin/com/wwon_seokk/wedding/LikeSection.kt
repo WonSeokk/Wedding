@@ -8,6 +8,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import kotlin.js.Promise
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.await
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.painterResource
@@ -52,7 +53,7 @@ fun LikeSection(
                     heartCount++
                 },
                 onUpdate = {
-                    scope.launch {
+                    scope.launch(Dispatchers.Unconfined) {
                         heartCount = getLikeCount("heart").await<JsNumber>().toInt()
                     }
                 }
@@ -68,14 +69,14 @@ fun LikeSection(
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             FloatingIconEffect(
-                size = 68.dp,
+                size = 52.dp,
                 painter = painterResource(resource = Res.drawable.party),
                 onClick = {
                     incrementLike("blessing")
                     blessingCount++
                 },
                 onUpdate = {
-                    scope.launch {
+                    scope.launch(Dispatchers.Unconfined) {
                         blessingCount = getLikeCount("blessing").await<JsNumber>().toInt()
                     }
                 }

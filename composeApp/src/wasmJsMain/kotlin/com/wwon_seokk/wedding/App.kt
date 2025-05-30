@@ -4,7 +4,6 @@ import AnimatedBox
 import DigitCountText
 import Flippable
 import FlippableState
-import FloatingIconEffect
 import Media
 import Media.MediaType
 import RemainTime
@@ -213,9 +212,11 @@ fun App() {
             registerMapBox("map-box")
             initNaverMap("map-container", weddingLat, weddingLng, zoomLevel)
             ImageLoader(context).execute(request)
-            heartCount = getLikeCount("heart").await<JsNumber>().toInt()
-            blessingCount = getLikeCount("blessing").await<JsNumber>().toInt()
-            incrementDailyVisit()
+            launch(Dispatchers.Unconfined) {
+                heartCount = getLikeCount("heart").await<JsNumber>().toInt()
+                blessingCount = getLikeCount("blessing").await<JsNumber>().toInt()
+                incrementDailyVisit()
+            }
         }
         val dimension = remember { mutableFloatStateOf(2f) }
         val flipController = rememberFlipController()
@@ -419,8 +420,9 @@ fun App() {
                                                                     Modifier
                                                             ),
                                                         model = ImageRequest.Builder(LocalPlatformContext.current)
-                                                            .data("${window.location.href}/asset/${media.fileName}.jpg")
-                                                            .diskCacheKey(media.fileName)
+                                                            .data("${window.location.href}/asset/${media.fileName}_org.jpg")
+                                                            .memoryCacheKey("${media.fileName}_org")
+                                                            .diskCacheKey("${media.fileName}_org")
                                                             .fetcherFactory(ktorFactory)
                                                             .build(),
                                                         placeholder = ColorPainter(color = Color.LightGray.copy(alpha = .4f)),
@@ -575,8 +577,8 @@ private fun Content(
                     AsyncImage(
                         modifier = Modifier.fillMaxWidth(),
                         model = ImageRequest.Builder(LocalPlatformContext.current)
-                            .data("${window.location.href}/asset/image1.jpg")
-                            .diskCacheKey("image1")
+                            .data("${window.location.href}/asset/image1_org.jpg")
+                            .diskCacheKey("image1_org")
                             .fetcherFactory(ktorFactory)
                             .build(),
                         placeholder = ColorPainter(color = Color.LightGray.copy(alpha = .4f)),
@@ -1547,6 +1549,42 @@ private fun Content(
                 }
             }
             item(
+                key = "map_location"
+            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(bottom = 16.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Text(
+                        text = "경기도 부천시 소사구 소사본동 65-7(경인로 386)",
+                        style = fontFamily.bodyLarge,
+                        fontSize = 14.sp,
+                        color = Color(0xFF574B40),
+                        textAlign = TextAlign.Center
+                    )
+                    Text(
+                        text = "MJ컨벤션 그랜드볼룸 5층",
+                        style = fontFamily.bodyLarge,
+                        fontSize = 14.sp,
+                        color = Color(0xFF574B40),
+                        textAlign = TextAlign.Center
+                    )
+                    Text(
+                        modifier = Modifier
+                            .clickable {
+                                window.navigator.clipboard.writeText("경기도 부천시 소사구 소사본동 65-7")
+                                window.alert("[경기도 부천시 소사구 소사본동 65-7]\n복사 완료")
+                            },
+                        text = "주소복사",
+                        style = fontFamily.bodyLarge,
+                        fontSize = 10.sp,
+                        color = Color(0xFF574B40)
+                    )
+                }
+            }
+            item(
                 key = "map"
             ) {
                 Box(
@@ -1557,53 +1595,13 @@ private fun Content(
                 )
             }
             item(
-                key = "map_location"
-            ) {
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(vertical = 16.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
-                    Text(
-                        text = "경기도 부천시 소사구 소사본동 65-7(경인로 386)",
-                        style = fontFamily.bodyLarge,
-                        fontSize = 14.sp,
-                        color = Color(0xFF574B40),
-                        textAlign = TextAlign.Center
-                    )
-                    Row(horizontalArrangement = Arrangement.spacedBy(2.dp)) {
-                        Text(
-                            text = "MJ컨벤션 그랜드볼룸 5층",
-                            style = fontFamily.bodyLarge,
-                            fontSize = 14.sp,
-                            color = Color(0xFF574B40),
-                            textAlign = TextAlign.Center
-                        )
-                        Text(
-                            modifier = Modifier
-                                .align(Alignment.Bottom)
-                                .clickable {
-                                    window.navigator.clipboard.writeText("경기도 부천시 소사구 소사본동 65-7")
-                                    window.alert("[경기도 부천시 소사구 소사본동 65-7]\n복사 완료")
-                                },
-                            text = "주소복사",
-                            style = fontFamily.bodyLarge,
-                            fontSize = 10.sp,
-                            color = Color(0xFF574B40)
-                        )
-                    }
-                }
-            }
-            item(
                 key = "map_direct"
             ) {
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(50.dp)
-                        .padding(horizontal = 16.dp)
-                        .padding(top = 8.dp),
+                        .padding(vertical = 16.dp, horizontal = 16.dp)
+                        .padding(top = 8.dp, bottom = 20.dp),
                     horizontalArrangement = Arrangement.spacedBy(4.dp)
                 ) {
                     Card(
@@ -1720,13 +1718,13 @@ private fun Content(
                             Text(
                                 text = "지하철",
                                 style = fontFamily.bodyLarge,
-                                fontSize = 13.sp,
+                                fontSize = 15.sp,
                                 color = Color(0xFFB76E79)
                             )
                             Text(
                                 text = "1호선, 서해선 > 소사역 1번출구 건너편 좌측(70m)",
                                 style = fontFamily.bodyLarge,
-                                fontSize = 13.sp,
+                                fontSize = 14.sp,
                                 color = Color(0xFF574B40)
                             )
                         }
@@ -1734,7 +1732,7 @@ private fun Content(
                             Text(
                                 text = "버스",
                                 style = fontFamily.bodyLarge,
-                                fontSize = 13.sp,
+                                fontSize = 15.sp,
                                 color = Color(0xFFB76E79)
                             )
                             Text(
@@ -1743,7 +1741,7 @@ private fun Content(
                                     "소사역: 19, 53, 83, 88\n" +
                                     "소사 푸르지오: 56, 56-1, 60",
                                 style = fontFamily.bodyLarge,
-                                fontSize = 13.sp,
+                                fontSize = 14.sp,
                                 color = Color(0xFF574B40)
                             )
                         }
@@ -1751,14 +1749,13 @@ private fun Content(
                             Text(
                                 text = "자가용",
                                 style = fontFamily.bodyLarge,
-                                fontSize = 13.sp,
+                                fontSize = 15.sp,
                                 color = Color(0xFFB76E79)
                             )
                             Text(
-                                text = "본관 및 주차타워 이용 가능 (2시간 주차 무료)\n" +
-                                    "소사구청 주차장 무료 이용 가능 (도보 2분)",
+                                text = "본관 및 주차타워 이용 가능 (2시간 주차 무료)",
                                 style = fontFamily.bodyLarge,
-                                fontSize = 13.sp,
+                                fontSize = 14.sp,
                                 color = Color(0xFF574B40)
                             )
                         }
