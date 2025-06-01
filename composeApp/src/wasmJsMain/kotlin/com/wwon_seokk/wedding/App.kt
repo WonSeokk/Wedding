@@ -153,6 +153,9 @@ external fun registerMapBox(elementId: String)
 @JsName("hideInitialLoading")
 external fun hideInitialLoading()
 
+@JsName("updateLoadingProgress")
+external fun updateLoadingProgress(loaded: Int, total: Int)
+
 const val weddingLat = 37.481504867692
 const val weddingLng = 126.79853505353
 const val zoomLevel = 16
@@ -225,10 +228,10 @@ fun App() {
         LaunchedEffect(Unit) {
             registerMapBox("map-box")
             initNaverMap("map-container", weddingLat, weddingLng, zoomLevel)
-            // 백그라운드에서 이미지 로딩
-            ImageLoader(context).execute(coverImageRequest)
-            ImageLoader(context).execute(mainImageRequest)
+            updateLoadingProgress(0, medias.size)
             launch(Dispatchers.Unconfined) {
+                ImageLoader(context).execute(coverImageRequest)
+                ImageLoader(context).execute(mainImageRequest)
                 heartCount.intValue = getLikeCount("heart").await<JsNumber>().toInt()
                 blessingCount.intValue = getLikeCount("blessing").await<JsNumber>().toInt()
                 incrementDailyVisit()
@@ -244,7 +247,7 @@ fun App() {
                         .fetcherFactory(ktorFactory)
                         .listener(onSuccess = { _, result ->
                             loaded++
-                            println("test :: $loaded")
+                            updateLoadingProgress(loaded, medias.size)
                             if(loaded == medias.size)
                                 isAppReady = true
                         })

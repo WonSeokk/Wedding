@@ -66,6 +66,59 @@
             font-size: 14px;
             color: #d0d0d0;
             opacity: 0.8;
+            margin-bottom: 20px;
+        }
+
+        .progress-container {
+            width: 200px;
+            height: 4px;
+            background-color: rgba(255, 255, 255, 0.1);
+            border-radius: 2px;
+            margin: 0 auto 10px;
+            overflow: visible;
+            position: relative;
+        }
+
+        .progress-bar {
+            width: 0%;
+            height: 100%;
+            background: linear-gradient(90deg, #B76E79 0%, #d4899a 100%);
+            border-radius: 2px;
+            transition: width 0.3s ease-out;
+            position: relative;
+        }
+
+        .progress-heart {
+            position: absolute;
+            right: -8px;
+            top: -6px;
+            font-size: 16px;
+            color: #B76E79;
+            animation: heartBeat 1.2s ease-in-out infinite, heartFloat 2s ease-in-out infinite;
+            text-shadow: 0 0 8px rgba(183, 110, 121, 0.6);
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .progress-heart.active {
+            opacity: 1;
+        }
+
+        @keyframes heartBeat {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.2); }
+        }
+
+        @keyframes heartFloat {
+            0%, 100% { transform: translateY(0px) scale(1); }
+            25% { transform: translateY(-2px) scale(1.1); }
+            75% { transform: translateY(1px) scale(0.95); }
+        }
+
+        .progress-text {
+            font-size: 12px;
+            color: #b0b0b0;
+            opacity: 0.7;
         }
 
         @keyframes spin {
@@ -93,6 +146,14 @@
 
         .loading-text {
             animation-delay: 0.6s;
+        }
+
+        .progress-container {
+            animation-delay: 0.8s;
+        }
+
+        .progress-text {
+            animation-delay: 1.0s;
         }
     </style>
 
@@ -184,6 +245,32 @@
                 setTimeout(() => {
                     loadingScreen.style.display = 'none';
                 }, 500);
+            }
+        };
+
+        // 로딩 진행률 업데이트 함수
+        window.updateLoadingProgress = function(loaded, total) {
+            const progressBar = document.querySelector('.progress-bar');
+            const progressText = document.querySelector('.progress-text');
+            const progressHeart = document.querySelector('.progress-heart');
+
+            if (progressBar && progressText && progressHeart) {
+                const percentage = Math.round((loaded / total) * 100);
+                progressBar.style.width = percentage + '%';
+                progressText.textContent = `${percentage}%`;
+
+                // 진행률이 0%보다 크면 하트 표시
+                if (percentage > 0) {
+                    progressHeart.classList.add('active');
+                } else {
+                    progressHeart.classList.remove('active');
+                }
+
+                // 100% 완료시 특별한 효과
+                if (percentage === 100) {
+                    progressHeart.style.animation = 'heartBeat 0.6s ease-in-out 3, heartFloat 2s ease-in-out infinite';
+                    progressText.textContent = '완료! ✨';
+                }
             }
         };
 
@@ -288,6 +375,12 @@
         <div class="wedding-date">2025년 08월 30일</div>
         <div class="loading-spinner"></div>
         <div class="loading-text">Loading...</div>
+        <div class="progress-container">
+            <div class="progress-bar">
+                <div class="progress-heart">💖</div>
+            </div>
+        </div>
+        <div class="progress-text">0%</div>
     </div>
 </div>
 </body>
