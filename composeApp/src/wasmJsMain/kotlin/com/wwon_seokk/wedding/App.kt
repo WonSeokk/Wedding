@@ -226,15 +226,12 @@ fun App() {
         }
         var loaded by remember { mutableIntStateOf(0) }
         LaunchedEffect(Unit) {
-            registerMapBox("map-box")
-            initNaverMap("map-container", weddingLat, weddingLng, zoomLevel)
             updateLoadingProgress(0, medias.size)
             launch(Dispatchers.Unconfined) {
+                registerMapBox("map-box")
+                initNaverMap("map-container", weddingLat, weddingLng, zoomLevel)
                 ImageLoader(context).execute(coverImageRequest)
                 ImageLoader(context).execute(mainImageRequest)
-                heartCount.intValue = getLikeCount("heart").await<JsNumber>().toInt()
-                blessingCount.intValue = getLikeCount("blessing").await<JsNumber>().toInt()
-                incrementDailyVisit()
                 medias.forEach { media ->
                     val url = when(media.type) {
                         MediaType.IMAGE -> "${window.location.href}/asset/${media.fileName}.jpg"
@@ -254,6 +251,9 @@ fun App() {
                         .build()
                     ImageLoader(context).execute(request)
                 }
+                heartCount.intValue = getLikeCount("heart").await<JsNumber>().toInt()
+                blessingCount.intValue = getLikeCount("blessing").await<JsNumber>().toInt()
+                incrementDailyVisit()
             }
         }
         
