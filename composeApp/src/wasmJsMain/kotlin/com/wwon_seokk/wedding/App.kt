@@ -70,6 +70,7 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.MutableFloatState
+import androidx.compose.runtime.MutableIntState
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
@@ -201,8 +202,8 @@ val videoMedias = medias.filter { it.type == MediaType.VIDEO }
 fun App() {
     MaterialTheme {
         val context = LocalPlatformContext.current
-        var heartCount by remember { mutableIntStateOf(0) }
-        var blessingCount by remember { mutableIntStateOf(0) }
+        val heartCount = remember { mutableIntStateOf(0) }
+        val blessingCount = remember { mutableIntStateOf(0) }
         var isImageLoaded by remember { mutableStateOf(false) }
         var isAppReady by remember { mutableStateOf(false) }
         val coverImageRequest = remember {
@@ -228,8 +229,8 @@ fun App() {
             ImageLoader(context).execute(coverImageRequest)
             ImageLoader(context).execute(mainImageRequest)
             launch(Dispatchers.Unconfined) {
-                heartCount = getLikeCount("heart").await<JsNumber>().toInt()
-                blessingCount = getLikeCount("blessing").await<JsNumber>().toInt()
+                heartCount.intValue = getLikeCount("heart").await<JsNumber>().toInt()
+                blessingCount.intValue = getLikeCount("blessing").await<JsNumber>().toInt()
                 incrementDailyVisit()
                 medias.forEach { media ->
                     val url = when(media.type) {
@@ -528,8 +529,8 @@ private fun Cover(
 @OptIn(ExperimentalResourceApi::class, ExperimentalSharedTransitionApi::class)
 @Composable
 private fun Content(
-    heartCount: Int,
-    blessingCount: Int,
+    heartCount: MutableIntState,
+    blessingCount: MutableIntState,
     listState: LazyListState,
     sharedTransitionScope: SharedTransitionScope,
     animatedContentScope: AnimatedContentScope,

@@ -28,11 +28,9 @@ external fun getLikeCount(type: String): Promise<JsNumber>
 @Composable
 fun LikeSection(
     modifier: Modifier = Modifier,
-    heartCount: Int,
-    blessingCount: Int
+    heartCount: MutableIntState,
+    blessingCount: MutableIntState
 ) {
-    var heartCount by remember { mutableIntStateOf(heartCount) }
-    var blessingCount by remember { mutableIntStateOf(blessingCount) }
     val scope = rememberCoroutineScope()
     
     Row(
@@ -50,16 +48,16 @@ fun LikeSection(
                 size = 52.dp,
                 onClick = {
                     incrementLike("heart")
-                    heartCount++
+                    heartCount.intValue++
                 },
                 onUpdate = {
                     scope.launch(Dispatchers.Unconfined) {
-                        heartCount = getLikeCount("heart").await<JsNumber>().toInt()
+                        heartCount.intValue = getLikeCount("heart").await<JsNumber>().toInt()
                     }
                 }
             )
             DigitCountText(
-                count = heartCount,
+                count = heartCount.intValue,
                 style = fontFamily.bodyMedium,
                 fontSize = 14
             )
@@ -73,16 +71,16 @@ fun LikeSection(
                 painter = painterResource(resource = Res.drawable.party),
                 onClick = {
                     incrementLike("blessing")
-                    blessingCount++
+                    blessingCount.intValue++
                 },
                 onUpdate = {
                     scope.launch(Dispatchers.Unconfined) {
-                        blessingCount = getLikeCount("blessing").await<JsNumber>().toInt()
+                        blessingCount.intValue = getLikeCount("blessing").await<JsNumber>().toInt()
                     }
                 }
             )
             DigitCountText(
-                count = blessingCount,
+                count = blessingCount.intValue,
                 style = fontFamily.bodyMedium,
                 fontSize = 14
             )
