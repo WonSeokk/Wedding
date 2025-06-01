@@ -18,7 +18,8 @@ fun Int.dpToPx(density: Density): Float = with(density) {
  */
 fun Long.getRemainTime(): RemainTime {
     val currentTime = Clock.System.now().toEpochMilliseconds()
-    val remainMillis = this - currentTime
+    var isPlus = currentTime >= this
+    val remainMillis = if(isPlus) currentTime - this else this - currentTime
 
     val duration = remainMillis.milliseconds
 
@@ -33,6 +34,7 @@ fun Long.getRemainTime(): RemainTime {
     val sec = totalSeconds % 60
 
     return RemainTime(
+        isPlus = isPlus,
         day = day.toInt(),
         hour = hour.toInt().toString().padStart(2, '0'),
         min = min.toInt().toString().padStart(2, '0'),
@@ -41,6 +43,7 @@ fun Long.getRemainTime(): RemainTime {
 }
 @Stable
 data class RemainTime(
+    val isPlus: Boolean = false,
     val day: Int = 0,
     val hour: String = "00",
     val min: String = "00",

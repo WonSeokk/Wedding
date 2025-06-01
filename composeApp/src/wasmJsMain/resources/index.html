@@ -13,12 +13,94 @@
     <title>Wedding</title>
     <link type="text/css" rel="stylesheet" href="styles.css">
     <script type="text/javascript" src="https://oapi.map.naver.com/openapi/v3/maps.js?ncpKeyId=wxw24lbmdq"></script>
-    
+
+    <!-- 초기 로딩 화면 스타일 -->
+    <style>
+        #initial-loading {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #2a2a2a 0%, #1a1a1a 50%, #0f0f0f 100%);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        }
+
+        .loading-content {
+            text-align: center;
+            padding: 40px;
+        }
+
+        .wedding-title {
+            font-size: 32px;
+            color: #ffffff;
+            margin-bottom: 10px;
+            font-weight: 300;
+            letter-spacing: 2px;
+            text-shadow: 0 2px 4px rgba(183, 110, 121, 0.3);
+        }
+
+        .wedding-date {
+            font-size: 16px;
+            color: #e0e0e0;
+            margin-bottom: 40px;
+            opacity: 0.9;
+        }
+
+        .loading-spinner {
+            width: 40px;
+            height: 40px;
+            border: 3px solid rgba(255, 255, 255, 0.2);
+            border-top: 3px solid #B76E79;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+
+        .loading-text {
+            font-size: 14px;
+            color: #d0d0d0;
+            opacity: 0.8;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .loading-content > * {
+            animation: fadeIn 0.8s ease-out forwards;
+        }
+
+        .wedding-date {
+            animation-delay: 0.2s;
+        }
+
+        .loading-spinner {
+            animation: fadeIn 0.8s ease-out forwards, spin 1s linear infinite;
+            animation-delay: 0.4s, 0s;
+        }
+
+        .loading-text {
+            animation-delay: 0.6s;
+        }
+    </style>
+
     <!-- Firebase SDK for Like Counter -->
     <script type="module">
         import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.13.0/firebase-app.js';
         import { getDatabase, ref, get, runTransaction } from 'https://www.gstatic.com/firebasejs/10.13.0/firebase-database.js';
-        
+
         const firebaseConfig = {
             apiKey: "AIzaSyCo7Rlk1cFF4GYoQ77IX4LlnuikLk1BqMM",
             authDomain: "wedding-eb136.firebaseapp.com",
@@ -29,10 +111,10 @@
             appId: "1:1062632256733:web:455ad524d58f9205e2d734",
             measurementId: "G-V4P5QL75PK"
           };
-        
+
         const app = initializeApp(firebaseConfig);
         const database = getDatabase(app);
-        
+
         // 좋아요 카운트 증가
         window.incrementLike = async (type) => {
             try {
@@ -46,7 +128,7 @@
                 return false;
             }
         };
-        
+
         // 좋아요 카운트 읽기
         window.getLikeCount = async (type) => {
             try {
@@ -67,8 +149,6 @@
 
         window.incrementDailyVisit = async () => {
             try {
-                // 특정 시간대(KST)로 날짜를 생성하기 위한 라이브러리 (예: moment-timezone, date-fns-tz) 사용 권장
-                // 여기서는 간단하게 로컬 서버 시간을 가정
                 const today = new Date();
                 const year = today.getFullYear();
                 const month = String(today.getMonth() + 1).padStart(2, '0');
@@ -86,20 +166,31 @@
                 return false;
             }
         };
-        
+
         console.log('Firebase Like Counter initialized');
     </script>
-    
+
     <script type="text/javascript">
         var weddingMap = null;
         var isMapVisible = false;
         var lastKnownMapPosition = 0;
 
+        // Compose App이 준비되면 초기 로딩 화면을 숨기는 함수
+        window.hideInitialLoading = function() {
+            const loadingScreen = document.getElementById('initial-loading');
+            if (loadingScreen) {
+                loadingScreen.style.opacity = '0';
+                loadingScreen.style.transition = 'opacity 0.5s ease-out';
+                setTimeout(() => {
+                    loadingScreen.style.display = 'none';
+                }, 500);
+            }
+        };
+
         // 지도 초기화 함수
         function initNaverMap(elementId, lat, lng, zoom) {
             var mapContainer = document.getElementById(elementId);
             if (!mapContainer) {
-                // 없으면 생성
                 mapContainer = document.createElement('div');
                 mapContainer.id = elementId;
                 mapContainer.style.position = 'absolute';
@@ -190,6 +281,15 @@
     </script>
 </head>
 <body>
+<!-- 초기 로딩 화면 -->
+<div id="initial-loading">
+    <div class="loading-content">
+        <div class="wedding-title">원석 ❤️ 서영</div>
+        <div class="wedding-date">2025년 08월 30일</div>
+        <div class="loading-spinner"></div>
+        <div class="loading-text">청첩장을 준비하고 있습니다...</div>
+    </div>
+</div>
 </body>
 <footer>
     <script type="application/javascript" src="composeApp.js"></script>

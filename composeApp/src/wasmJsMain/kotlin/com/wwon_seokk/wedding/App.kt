@@ -3,7 +3,6 @@ package com.wwon_seokk.wedding
 import AnimatedBox
 import DigitCountText
 import Flippable
-import FlippableState
 import Media
 import Media.MediaType
 import RemainTime
@@ -150,6 +149,9 @@ external fun showNaverMap(elementId: String, show: Boolean, positionY: Float)
 @JsName("registerMapBox")
 external fun registerMapBox(elementId: String)
 
+@JsName("hideInitialLoading")
+external fun hideInitialLoading()
+
 const val weddingLat = 37.481504867692
 const val weddingLng = 126.79853505353
 const val zoomLevel = 16
@@ -201,35 +203,74 @@ fun App() {
         val context = LocalPlatformContext.current
         var heartCount by remember { mutableIntStateOf(0) }
         var blessingCount by remember { mutableIntStateOf(0) }
-        var isLoading by remember { mutableStateOf(false) }
-        val request = remember {
+        var isImageLoaded by remember { mutableStateOf(false) }
+        var isAppReady by remember { mutableStateOf(false) }
+        val coverImageRequest = remember {
             ImageRequest.Builder(context)
-                .data("${window.location.href}/asset/image1.jpg")
-                .diskCacheKey("image1")
+                .data(Res.getUri("/drawable/cover.png"))
+                .diskCacheKey("cover")
                 .fetcherFactory(ktorFactory)
-                .listener(onSuccess = { _, result -> isLoading = true })
                 .build()
         }
+        val mainImageRequest = remember {
+            ImageRequest.Builder(context)
+                .data("${window.location.href}/asset/image1_org.jpg")
+                .diskCacheKey("image1_org")
+                .fetcherFactory(ktorFactory)
+                .listener(onSuccess = { _, result -> isImageLoaded = true })
+                .build()
+        }
+        var loaded by remember { mutableIntStateOf(0) }
         LaunchedEffect(Unit) {
             registerMapBox("map-box")
             initNaverMap("map-container", weddingLat, weddingLng, zoomLevel)
-            ImageLoader(context).execute(request)
+            // 백그라운드에서 이미지 로딩
+            ImageLoader(context).execute(coverImageRequest)
+            ImageLoader(context).execute(mainImageRequest)
             launch(Dispatchers.Unconfined) {
                 heartCount = getLikeCount("heart").await<JsNumber>().toInt()
                 blessingCount = getLikeCount("blessing").await<JsNumber>().toInt()
                 incrementDailyVisit()
+                medias.forEach { media ->
+                    val url = when(media.type) {
+                        MediaType.IMAGE -> "${window.location.href}/asset/${media.fileName}.jpg"
+                        MediaType.VIDEO -> "${window.location.href}/asset/${media.thumb}.jpg"
+                    }
+                    val request = ImageRequest.Builder(context)
+                        .data(url)
+                        .memoryCacheKey(media.thumb)
+                        .diskCacheKey(media.thumb)
+                        .fetcherFactory(ktorFactory)
+                        .listener(onSuccess = { _, result ->
+                            loaded++
+                            println("test :: $loaded")
+                            if(loaded == medias.size)
+                                isAppReady = true
+                        })
+                        .build()
+                    ImageLoader(context).execute(request)
+                }
             }
         }
+        
         val dimension = remember { mutableFloatStateOf(2f) }
         val flipController = rememberFlipController()
         var isFront by remember { mutableStateOf(false) }
         var isCoverBackground by remember { mutableStateOf(true) }
 
-        LaunchedEffect(isLoading) {
-            if(isLoading) {
+        LaunchedEffect(isAppReady) {
+            if(isAppReady) {
+                hideInitialLoading()
+                delay(500)
                 isFront = true
-                delay(3800)
+            }
+        }
+
+        LaunchedEffect(isImageLoaded, isAppReady) {
+            if(isImageLoaded && isAppReady) {
+                delay(4300)
                 flipController.flipToBack()
+                isFront = false
                 isCoverBackground = false
             }
         }
@@ -251,12 +292,39 @@ fun App() {
                     enter = fadeIn(animationSpec = tween(durationMillis = 1500)),
                     exit = fadeOut(animationSpec = tween(durationMillis = 1500))
                 ) {
-                    Image(
-                        modifier = Modifier.fillMaxSize(),
-                        painter = painterResource(Res.drawable.cover_background),
-                        contentScale = ContentScale.FillHeight,
-                        contentDescription = null
-                    )
+                    Box {
+                        Image(
+                            modifier = Modifier
+                                .zIndex(1f)
+                                .fillMaxSize(),
+                            painter = painterResource(Res.drawable.cover_background),
+                            contentScale = ContentScale.FillHeight,
+                            contentDescription = null
+                        )
+                        val playerState = rememberVideoPlayerState()
+                        LaunchedEffect(Unit) {
+                            playerState.openUri("${window.location.href}/asset/snow.mp4")
+                            playerState.volume = 0f
+                            playerState.loop = true
+                        }
+                        VideoPlayerSurface(
+                            modifier = Modifier
+                                .width(550.dp)
+                                .align(alignment = Alignment.Center)
+                                .fillMaxHeight(),
+                            playerState = playerState,
+                            contentScale = ContentScale.Crop
+                        ) {
+                            LaunchedEffect(Unit) {
+                                val documentVideos: NodeList = document.querySelectorAll("video")
+                                for (i in 0 until documentVideos.length) {
+                                    val video = documentVideos[i] as HTMLVideoElement
+                                    video.style.cssText = "position: absolute; mix-blend-mode: screen; background-color: black; margin: 0px; left: 0px; top: 0px; object-fit: fill;"
+                                    video.muted = true
+                                }
+                            }
+                        }
+                    }
                 }
                 AnimatedVisibility(
                     visible = isCoverBackground.not(),
@@ -280,28 +348,6 @@ fun App() {
                         Cover(isFront = isFront)
                     },
                     backSide = {
-                        if(isLoading.not() || isCoverBackground) {
-                            val playerState = rememberVideoPlayerState()
-                            LaunchedEffect(Unit) {
-                                playerState.openUri("${window.location.href}/asset/snow.mp4")
-                                playerState.volume = 0f
-                                playerState.loop = true
-                            }
-                            VideoPlayerSurface(
-                                modifier = Modifier.matchParentSize(),
-                                playerState = playerState,
-                                contentScale = ContentScale.FillBounds
-                            ) {
-                                LaunchedEffect(Unit) {
-                                    val documentVideos: NodeList = document.querySelectorAll("video")
-                                    for (i in 0 until documentVideos.length) {
-                                        val video = documentVideos[i] as HTMLVideoElement
-                                        video.style.cssText = "position: absolute; z-index: 1; mix-blend-mode: screen; background-color: black; margin: 0px; left: 0px; top: 0px; object-fit: fill;"
-                                        video.muted = true
-                                    }
-                                }
-                            }
-                        }
                         var showDetails by remember { mutableStateOf(false) }
                         var detailKey by remember { mutableStateOf("") }
                         val listState = rememberLazyListState()
@@ -455,7 +501,7 @@ fun App() {
 
                     },
                     flipController = flipController
-                ) { isFront = it != FlippableState.BACK }
+                )
             }
         }
     }
@@ -468,8 +514,11 @@ private fun Cover(
 ) {
     Box(modifier = modifier) {
         AsyncImage(
-            modifier = Modifier.fillMaxWidth(),
-            model = Res.getUri("/drawable/cover.png"),
+            model = ImageRequest.Builder(LocalPlatformContext.current)
+                .data(Res.getUri("/drawable/cover.png"))
+                .diskCacheKey("cover")
+                .fetcherFactory(ktorFactory)
+                .build(),
             contentDescription = null
         )
         SvgAnimationContainer(modifier = Modifier.matchParentSize(), isFront = isFront)
@@ -1097,7 +1146,11 @@ private fun Content(
                             verticalArrangement = Arrangement.spacedBy(1.dp),
                             horizontalAlignment = Alignment.CenterHorizontally
                         ) {
-                            DdayContent(time = "D-" to remainDay.day)
+                            DdayContent(time = when {
+                                remainDay.day == 0 -> "D-DAY"
+                                remainDay.isPlus -> "D+"
+                                else -> "D-"
+                            } to remainDay.day)
                             Row(
                                 verticalAlignment = Alignment.CenterVertically,
                                 horizontalArrangement = Arrangement.spacedBy(4.dp, Alignment.CenterHorizontally)
@@ -1106,7 +1159,7 @@ private fun Content(
                                     TimerContent(time = hour, backText = "시간")
                                 }
                                 TimerContent(time = min, backText = "분")
-                                TimerContent(time = sec, backText = "초 남음")
+                                TimerContent(time = sec, backText = if(remainTime.isPlus) "초 지남" else "초 남음")
                             }
                         }
                     }
@@ -1214,6 +1267,7 @@ private fun Content(
                                                 ),
                                             model = ImageRequest.Builder(LocalPlatformContext.current)
                                                 .data("${window.location.href}/asset/${item?.fileName}.jpg")
+                                                .memoryCacheKey(item?.fileName)
                                                 .diskCacheKey(item?.fileName)
                                                 .fetcherFactory(ktorFactory)
                                                 .build(),
@@ -1897,13 +1951,24 @@ private fun DdayContent(
     fontSize: Int = 28,
     color: Color = Color(0xFFB76E79),
 ) {
-    DigitCountText(
-        modifier = Modifier.padding(vertical = 4.dp, horizontal = 8.dp),
-        frontText = time.first,
-        count = time.second,
-        textColor = color,
-        fontSize = fontSize,
-    )
+    if(time.second == 0){
+        Text(
+            text = time.first,
+            textAlign = TextAlign.Center,
+            style = fontFamily.bodyLarge,
+            color = color,
+            fontSize = fontSize.sp
+        )
+    } else {
+        DigitCountText(
+            modifier = Modifier.padding(vertical = 4.dp, horizontal = 8.dp),
+            frontText = time.first,
+            count = time.second,
+            textColor = color,
+            fontSize = fontSize,
+        )
+    }
+
 }
 
 @Composable
@@ -1943,6 +2008,7 @@ private fun VideoPlayer(
                 modifier = Modifier.fillMaxSize(),
                 model = ImageRequest.Builder(LocalPlatformContext.current)
                     .data("${window.location.href}/asset/$thumb.jpg")
+                    .memoryCacheKey(thumb)
                     .diskCacheKey(thumb)
                     .fetcherFactory(ktorFactory)
                     .build(),
