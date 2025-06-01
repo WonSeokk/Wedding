@@ -4,6 +4,10 @@ import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.DurationUnit
 import kotlinx.browser.window
 import kotlinx.datetime.Clock
+import kotlinx.datetime.Instant
+import kotlinx.datetime.TimeZone
+import kotlinx.datetime.atStartOfDayIn
+import kotlinx.datetime.toLocalDateTime
 
 fun Int.pxToDp(density: Density): Float = with(density) {
     return this@pxToDp / this@with.density
@@ -16,10 +20,27 @@ fun Int.dpToPx(density: Density): Float = with(density) {
 /**
  * 타이머 계산
  */
-fun Long.getRemainTime(): RemainTime {
-    val currentTime = Clock.System.now().toEpochMilliseconds()
-    var isPlus = currentTime >= this
-    val remainMillis = if(isPlus) currentTime - this else this - currentTime
+fun Long.getRemainTime(isDday: Boolean = false): RemainTime {
+    val currentTime: Long
+    val targetTime: Long
+
+    if (isDday) {
+        val timeZone = TimeZone.currentSystemDefault()
+
+        // 현재 날짜의 00:00:00
+        val currentDate = Clock.System.now().toLocalDateTime(timeZone).date
+        currentTime = currentDate.atStartOfDayIn(timeZone).toEpochMilliseconds()
+
+        // 목표 날짜의 00:00:00
+        val targetDate = Instant.fromEpochMilliseconds(this).toLocalDateTime(timeZone).date
+        targetTime = targetDate.atStartOfDayIn(timeZone).toEpochMilliseconds()
+    } else {
+        currentTime = Clock.System.now().toEpochMilliseconds()
+        targetTime = this
+    }
+
+    var isPlus = currentTime >= targetTime
+    val remainMillis = if(isPlus) currentTime - targetTime else targetTime - currentTime
 
     val duration = remainMillis.milliseconds
 

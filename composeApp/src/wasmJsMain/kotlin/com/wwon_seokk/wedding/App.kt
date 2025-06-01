@@ -564,7 +564,7 @@ private fun Content(
         launch(Dispatchers.Default) {
             while(true) {
                 remainTime = timeMillis.getRemainTime()
-                remainDay = dayMillis.getRemainTime()
+                remainDay = dayMillis.getRemainTime(true)
                 delay(1000L)
             }
         }
