@@ -108,7 +108,6 @@ import coil3.request.ImageRequest
 import coil3.request.maxBitmapSize
 import coil3.size.Size
 import getRemainTime
-import io.github.kdroidfilter.composemediaplayer.VideoPlayerState
 import io.github.kdroidfilter.composemediaplayer.VideoPlayerSurface
 import io.github.kdroidfilter.composemediaplayer.rememberVideoPlayerState
 import isMobileDevice
@@ -162,9 +161,8 @@ const val zoomLevel = 16
 
 private val ktorFactory by lazy { KtorNetworkFetcherFactory() }
 
-// 다중 CDN 옵션 (jsDelivr 우선, Cloudflare 백업)
+// jsDelivr CDN을 통한 빠른 이미지 로딩
 const val CDN_BASE_URL = "https://cdn.jsdelivr.net/gh/WonSeokk/Wedding@master/composeApp/src/wasmJsMain/resources/"
-const val BACKUP_CDN_URL = "https://raw.githubusercontent.com/WonSeokk/Wedding/master/composeApp/src/wasmJsMain/resources/"
 
 val medias = listOf(
     Media(key = 1, type = MediaType.IMAGE, fileName = "image1"),
@@ -245,8 +243,12 @@ fun App() {
                 loaded++
                 updateLoadingProgress(loaded, 6)
                 
-                // 첫 4장의 갤러리 이미지만 프리로드
-                imageMedias.take(4).forEach { media ->
+                // 첫 4장의 갤러리 이미지 + 비디오 썸네일만 프리로드
+                val essentialMedia = imageMedias.take(4) + videoMedias.map { video ->
+                    Media(video.key, MediaType.IMAGE, video.thumb ?: "")
+                }.filter { it.fileName.isNotEmpty() }
+                
+                essentialMedia.forEach { media ->
                     val request = ImageRequest.Builder(context)
                         .data("${CDN_BASE_URL}asset/${media.fileName}.jpg")
                         .memoryCacheKey(media.fileName)
@@ -566,11 +568,12 @@ private fun Content(
     detailKey: String,
     showDetail: (String) -> Unit,
 ) {
+    // 비디오 플레이어들 (기존 방식으로 복원)
     val playerStates = (1..videoMedias.size).map { i ->
         val state = rememberVideoPlayerState()
         LaunchedEffect(i) {
             val filename = videoMedias.find { it.key == i }?.fileName
-                            state.openUri("${CDN_BASE_URL}asset/${filename}.mp4")
+            state.openUri("${CDN_BASE_URL}asset/${filename}.mp4")
             state.volume = 0f
             state.loop = true
         }
@@ -1184,7 +1187,7 @@ private fun Content(
                                 verticalAlignment = Alignment.CenterVertically,
                                 horizontalArrangement = Arrangement.spacedBy(4.dp, Alignment.CenterHorizontally)
                             ) {
-                                hour?.let {
+                                hour.let {
                                     TimerContent(time = hour, backText = "시간")
                                 }
                                 TimerContent(time = min, backText = "분")
@@ -1235,6 +1238,7 @@ private fun Content(
                 val second = imageMedias.find { it.key == firstIndex + 2 }
                 val third = imageMedias.find { it.key == firstIndex + 3 }
                 val forth = imageMedias.find { it.key == firstIndex + 4 }
+                
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -1251,16 +1255,17 @@ private fun Content(
                                 .weight(1f)
                                 .aspectRatio(.5f)
                         ) {
-                            playerStates.getOrNull(column)?.let {
+                            playerStates.getOrNull(column)?.let { playerState ->
                                 videoMedias.find { it.key == column + 1}?.thumb?.let { thumb ->
-                                    VideoPlayer(
+                                    ImprovedVideoPlayer(
                                         thumb = thumb,
-                                        playerState = it
+                                        playerState = playerState
                                     )
                                 }
                             }
                         }
                     }
+                    
                     Column(
                         modifier = Modifier.weight(2f),
                         verticalArrangement = Arrangement.spacedBy(2.dp)
@@ -1305,11 +1310,11 @@ private fun Content(
                                             contentDescription = null
                                         )
                                     }
-
                                 }
                             }
                         }
                     }
+                    
                     if(isOdd.not()) {
                         Box(
                             modifier = Modifier
@@ -1317,11 +1322,11 @@ private fun Content(
                                 .zIndex(-1f)
                                 .aspectRatio(.5f)
                         ) {
-                            playerStates.getOrNull(column)?.let {
+                            playerStates.getOrNull(column)?.let { playerState ->
                                 videoMedias.find { it.key == column + 1}?.thumb?.let { thumb ->
-                                    VideoPlayer(
+                                    ImprovedVideoPlayer(
                                         thumb = thumb,
-                                        playerState = it
+                                        playerState = playerState
                                     )
                                 }
                             }
@@ -1998,53 +2003,5 @@ private fun DdayContent(
         )
     }
 
-}
-
-@Composable
-private fun VideoPlayer(
-    thumb: String,
-    playerState: VideoPlayerState,
-) {
-    var isReady by remember { mutableStateOf(false) }
-    LaunchedEffect(isReady) {
-        if(playerState.isPlaying.not())
-            playerState.play()
-    }
-    LaunchedEffect(playerState.isPlaying) {
-        if(playerState.isPlaying) {
-            delay(600)
-            isReady = true
-        } else
-            isReady = false
-    }
-    DisposableEffect(Unit) {
-        onDispose { isReady = false }
-    }
-    VideoPlayerSurface(
-        modifier = Modifier.fillMaxSize(),
-        playerState = playerState,
-        contentScale = ContentScale.Crop
-    ) {
-        LaunchedEffect(Unit) {
-            val documentVideos: NodeList = document.querySelectorAll("video")
-            for (i in 0 until documentVideos.length) {
-                val video = documentVideos[i] as HTMLVideoElement
-                video.muted = true
-            }
-        }
-        if(isReady.not())
-            AsyncImage(
-                modifier = Modifier.fillMaxSize(),
-                model = ImageRequest.Builder(LocalPlatformContext.current)
-                    .data("${window.location.href}/asset/$thumb.jpg")
-                    .memoryCacheKey(thumb)
-                    .diskCacheKey(thumb)
-                    .fetcherFactory(ktorFactory)
-                    .build(),
-                placeholder = ColorPainter(color = Color.LightGray.copy(alpha = .2f)),
-                contentScale = ContentScale.Crop,
-                contentDescription = null
-            )
-    }
 }
 
