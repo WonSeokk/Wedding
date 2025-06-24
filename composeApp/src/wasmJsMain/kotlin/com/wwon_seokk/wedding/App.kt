@@ -162,8 +162,9 @@ const val zoomLevel = 16
 
 private val ktorFactory by lazy { KtorNetworkFetcherFactory() }
 
-// GitHub Pages를 활용한 최적화된 로딩
-const val BASE_URL = "${window.location.href}"
+// 다중 CDN 옵션 (jsDelivr 우선, Cloudflare 백업)
+const val CDN_BASE_URL = "https://cdn.jsdelivr.net/gh/WonSeokk/Wedding@master/composeApp/src/wasmJsMain/resources/"
+const val BACKUP_CDN_URL = "https://raw.githubusercontent.com/WonSeokk/Wedding/master/composeApp/src/wasmJsMain/resources/"
 
 val medias = listOf(
     Media(key = 1, type = MediaType.IMAGE, fileName = "image1"),
@@ -221,7 +222,7 @@ fun App() {
         }
         val mainImageRequest = remember {
             ImageRequest.Builder(context)
-                .data("${BASE_URL}asset/image1_org.jpg")
+                .data("${CDN_BASE_URL}asset/image1_org.jpg")
                 .diskCacheKey("image1_org")
                 .fetcherFactory(ktorFactory)
                 .build()
@@ -247,7 +248,7 @@ fun App() {
                 // 첫 4장의 갤러리 이미지만 프리로드
                 imageMedias.take(4).forEach { media ->
                     val request = ImageRequest.Builder(context)
-                        .data("${BASE_URL}asset/${media.fileName}.jpg")
+                        .data("${CDN_BASE_URL}asset/${media.fileName}.jpg")
                         .memoryCacheKey(media.fileName)
                         .diskCacheKey(media.fileName)
                         .fetcherFactory(ktorFactory)
@@ -269,7 +270,7 @@ fun App() {
                     delay(3000) // 사용자가 앱을 보기 시작한 후 3초 후에 시작
                     imageMedias.drop(4).forEach { media ->
                         val request = ImageRequest.Builder(context)
-                            .data("${BASE_URL}asset/${media.fileName}.jpg")
+                            .data("${CDN_BASE_URL}asset/${media.fileName}.jpg")
                             .memoryCacheKey(media.fileName)
                             .diskCacheKey(media.fileName)
                             .fetcherFactory(ktorFactory)
@@ -331,7 +332,7 @@ fun App() {
                         )
                         val playerState = rememberVideoPlayerState()
                         LaunchedEffect(Unit) {
-                                            playerState.openUri("${BASE_URL}asset/snow.mp4")
+                                            playerState.openUri("${CDN_BASE_URL}asset/snow.mp4")
                             playerState.volume = 0f
                             playerState.loop = true
                         }
@@ -496,7 +497,7 @@ fun App() {
                                                                     Modifier
                                                             ),
                                                         model = ImageRequest.Builder(LocalPlatformContext.current)
-                                                            .data("${BASE_URL}asset/${media.fileName}_org.jpg")
+                                                            .data("${CDN_BASE_URL}asset/${media.fileName}_org.jpg")
                                                             .memoryCacheKey("${media.fileName}_org")
                                                             .diskCacheKey("${media.fileName}_org")
                                                             .maxBitmapSize(Size.ORIGINAL)
@@ -569,7 +570,7 @@ private fun Content(
         val state = rememberVideoPlayerState()
         LaunchedEffect(i) {
             val filename = videoMedias.find { it.key == i }?.fileName
-                            state.openUri("${BASE_URL}asset/${filename}.mp4")
+                            state.openUri("${CDN_BASE_URL}asset/${filename}.mp4")
             state.volume = 0f
             state.loop = true
         }
@@ -657,7 +658,7 @@ private fun Content(
                     AsyncImage(
                         modifier = Modifier.fillMaxWidth(),
                         model = ImageRequest.Builder(LocalPlatformContext.current)
-                            .data("${BASE_URL}asset/image1_org.jpg")
+                            .data("${CDN_BASE_URL}asset/image1_org.jpg")
                             .diskCacheKey("image1_org")
                             .fetcherFactory(ktorFactory)
                             .build(),
@@ -1294,7 +1295,7 @@ private fun Content(
                                                         Modifier
                                                 ),
                                             model = ImageRequest.Builder(LocalPlatformContext.current)
-                                                .data("${BASE_URL}asset/${item?.fileName}.jpg")
+                                                .data("${CDN_BASE_URL}asset/${item?.fileName}.jpg")
                                                 .memoryCacheKey(item?.fileName)
                                                 .diskCacheKey(item?.fileName)
                                                 .fetcherFactory(ktorFactory)
