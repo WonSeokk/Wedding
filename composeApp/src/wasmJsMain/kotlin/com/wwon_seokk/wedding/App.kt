@@ -200,7 +200,8 @@ val medias = listOf(
 val imageMedias = medias.filter { it.type == MediaType.IMAGE }
 val videoMedias = medias.filter { it.type == MediaType.VIDEO }
 
-@OptIn(ExperimentalResourceApi::class, ExperimentalMaterial3Api::class, ExperimentalComposeUiApi::class, ExperimentalFoundationApi::class,
+@OptIn(
+    ExperimentalResourceApi::class, ExperimentalMaterial3Api::class, ExperimentalComposeUiApi::class, ExperimentalFoundationApi::class,
     ExperimentalSharedTransitionApi::class
 )
 @Composable
@@ -232,22 +233,22 @@ fun App() {
             launch(Dispatchers.Unconfined) {
                 registerMapBox("map-box")
                 initNaverMap("map-container", weddingLat, weddingLng, zoomLevel)
-                
+
                 // 1단계: 필수 이미지만 먼저 로드
                 ImageLoader(context).execute(coverImageRequest)
                 loaded++
                 updateLoadingProgress(loaded, 6)
-                
+
                 ImageLoader(context).execute(mainImageRequest)
                 isImageLoaded = true
                 loaded++
                 updateLoadingProgress(loaded, 6)
-                
+
                 // 첫 4장의 갤러리 이미지 + 비디오 썸네일만 프리로드
                 val essentialMedia = imageMedias.take(4) + videoMedias.map { video ->
                     Media(video.key, MediaType.IMAGE, video.thumb ?: "")
                 }.filter { it.fileName.isNotEmpty() }
-                
+
                 essentialMedia.forEach { media ->
                     val request = ImageRequest.Builder(context)
                         .data("${CDN_BASE_URL}asset/${media.fileName}.jpg")
@@ -257,16 +258,16 @@ fun App() {
                         .listener(onSuccess = { _, result ->
                             loaded++
                             updateLoadingProgress(loaded, 6)
-                            if(loaded >= 6) isAppReady = true
+                            if (loaded >= 6) isAppReady = true
                         })
                         .build()
                     ImageLoader(context).execute(request)
                 }
-                
+
                 heartCount.intValue = getLikeCount("heart").await<JsNumber>().toInt()
                 blessingCount.intValue = getLikeCount("blessing").await<JsNumber>().toInt()
                 incrementDailyVisit()
-                
+
                 // 2단계: 백그라운드에서 나머지 이미지들 로드
                 launch(Dispatchers.Default) {
                     delay(3000) // 사용자가 앱을 보기 시작한 후 3초 후에 시작
@@ -283,14 +284,14 @@ fun App() {
                 }
             }
         }
-        
+
         val dimension = remember { mutableFloatStateOf(2f) }
         val flipController = rememberFlipController()
         var isFront by remember { mutableStateOf(false) }
         var isCoverBackground by remember { mutableStateOf(true) }
 
         LaunchedEffect(isAppReady) {
-            if(isAppReady) {
+            if (isAppReady) {
                 hideInitialLoading()
                 delay(500)
                 isFront = true
@@ -298,7 +299,7 @@ fun App() {
         }
 
         LaunchedEffect(isImageLoaded, isAppReady) {
-            if(isImageLoaded && isAppReady) {
+            if (isImageLoaded && isAppReady) {
                 delay(4300)
                 flipController.flipToBack()
                 isFront = false
@@ -308,7 +309,10 @@ fun App() {
 
         CompositionLocalProvider(
             LocalAbsoluteTonalElevation provides 0.dp,
-            LocalRippleConfiguration provides RippleConfiguration(color = Color.Unspecified, rippleAlpha = RippleAlpha(0.0f,0.0f,0.0f,0.0f))
+            LocalRippleConfiguration provides RippleConfiguration(
+                color = Color.Unspecified,
+                rippleAlpha = RippleAlpha(0.0f, 0.0f, 0.0f, 0.0f)
+            )
         ) {
             Box(
                 modifier = Modifier
@@ -334,7 +338,7 @@ fun App() {
                         )
                         val playerState = rememberVideoPlayerState()
                         LaunchedEffect(Unit) {
-                                            playerState.openUri("${CDN_BASE_URL}asset/snow.mp4")
+                            playerState.openUri("${CDN_BASE_URL}asset/snow.mp4")
                             playerState.volume = 0f
                             playerState.loop = true
                         }
@@ -350,7 +354,8 @@ fun App() {
                                 val documentVideos: NodeList = document.querySelectorAll("video")
                                 for (i in 0 until documentVideos.length) {
                                     val video = documentVideos[i] as HTMLVideoElement
-                                    video.style.cssText = "position: absolute; mix-blend-mode: screen; background-color: black; margin: 0px; left: 0px; top: 0px; object-fit: fill;"
+                                    video.style.cssText =
+                                        "position: absolute; mix-blend-mode: screen; background-color: black; margin: 0px; left: 0px; top: 0px; object-fit: fill;"
                                     video.muted = true
                                 }
                             }
@@ -384,7 +389,7 @@ fun App() {
                         val listState = rememberLazyListState()
                         SharedTransitionLayout {
                             AnimatedContent(showDetails) {
-                                if(!it)
+                                if (!it)
                                     Content(
                                         heartCount = heartCount,
                                         blessingCount = blessingCount,
@@ -398,7 +403,7 @@ fun App() {
                                         detailKey = it
                                         showDetails = true
                                     }
-                                if(it) {
+                                if (it) {
                                     val media = imageMedias.find { it.fileName == detailKey }
                                     val index = imageMedias.indexOf(media)
                                     val horizontalState = rememberPagerState(index) { imageMedias.size }
@@ -457,7 +462,8 @@ fun App() {
                                                 Box(
                                                     modifier = Modifier
                                                         .graphicsLayer {
-                                                            val pageOffset = horizontalState.currentPage - page + horizontalState.currentPageOffsetFraction
+                                                            val pageOffset =
+                                                                horizontalState.currentPage - page + horizontalState.currentPageOffsetFraction
                                                             alpha = lerp(
                                                                 start = .5f,
                                                                 stop = 1f,
@@ -487,7 +493,7 @@ fun App() {
                                                             .clip(RoundedCornerShape(20.dp))
                                                             .heightIn(max = 500.dp)
                                                             .then(
-                                                                if(detailKey == media.fileName)
+                                                                if (detailKey == media.fileName)
                                                                     Modifier.sharedBounds(
                                                                         sharedContentState = rememberSharedContentState(media.fileName),
                                                                         animatedVisibilityScope = this@AnimatedContent,
@@ -590,11 +596,11 @@ private fun Content(
         val instant = date.toInstant(TimeZone.UTC)
         instant.toEpochMilliseconds()
     }
-    var remainDay: RemainTime by remember { mutableStateOf(RemainTime())}
-    var remainTime: RemainTime by remember { mutableStateOf(RemainTime())}
+    var remainDay: RemainTime by remember { mutableStateOf(RemainTime()) }
+    var remainTime: RemainTime by remember { mutableStateOf(RemainTime()) }
     LaunchedEffect(Unit) {
         launch(Dispatchers.Default) {
-            while(true) {
+            while (true) {
                 remainTime = timeMillis.getRemainTime()
                 remainDay = dayMillis.getRemainTime(true)
                 delay(1000L)
@@ -603,26 +609,26 @@ private fun Content(
     }
     val hour = remember(remainTime.hour) {
         val (first, second) = remainTime.hour.toList().let {
-            if(it.size > 2)
+            if (it.size > 2)
                 it.first() to it.filterIndexed { index, _ -> index != 0 }.joinToString("").toInt()
             else
                 it.first() to it.last().digitToInt()
         }
-        if(first == '0')
+        if (first == '0')
             first.toString() to second
         else
             "" to remainTime.hour.toInt()
     }
     val min = remember(remainTime.min) {
         val (first, second) = remainTime.min.toList().let { it.first() to it.last() }
-        if(first == '0')
+        if (first == '0')
             first.toString() to second.digitToInt()
         else
             "" to remainTime.min.toInt()
     }
     val sec = remember(remainTime.sec) {
         val (first, second) = remainTime.sec.toList().let { it.first() to it.last() }
-        if(first == '0')
+        if (first == '0')
             first.toString() to second.digitToInt()
         else
             "" to remainTime.sec.toInt()
@@ -638,7 +644,7 @@ private fun Content(
     var positionY by remember { mutableStateOf(0f) }
     LaunchedEffect(mapPositionY) {
         mapPositionY?.let { y ->
-            if(y.toFloat() != positionY) {
+            if (y.toFloat() != positionY) {
                 positionY = y.toFloat()
                 showNaverMap("map-container", true, positionY)
             }
@@ -648,7 +654,7 @@ private fun Content(
     }
 
 
-    LazyColumn (
+    LazyColumn(
         modifier = Modifier.fillMaxSize(),
         state = listState,
         content = {
@@ -705,7 +711,7 @@ private fun Content(
                             lineHeight = 30.sp,
                             textAlign = TextAlign.Center
                         )
-                        Spacer( modifier = Modifier.size(36.dp))
+                        Spacer(modifier = Modifier.size(36.dp))
                         Text(
                             modifier = Modifier.fillMaxWidth(),
                             text = "따뜻한 축복으로 저희 두 사람이\n함께하는 첫 걸음을 더욱 빛내주세요",
@@ -1023,7 +1029,7 @@ private fun Content(
             item(
                 key = "calendar_content"
             ) {
-                val weeks = remember { listOf("일","월","화","수","목","금","토") }
+                val weeks = remember { listOf("일", "월", "화", "수", "목", "금", "토") }
                 val calendarDays = remember {
                     val year = 2025
                     val month = 8
@@ -1068,13 +1074,13 @@ private fun Content(
                                                 if (day != null && day > 0) day.toString() else ""
                                             }
                                         }
-                                        if(text != "30")
+                                        if (text != "30")
                                             Text(
                                                 modifier = Modifier.weight(1f),
                                                 text = text,
                                                 style = fontFamily.bodyLarge,
                                                 fontSize = 16.sp,
-                                                color = if(text == "일") Color(0xFFB76E79) else Color(0xFF574B40),
+                                                color = if (text == "일") Color(0xFFB76E79) else Color(0xFF574B40),
                                                 textAlign = TextAlign.Center
                                             )
                                         else {
@@ -1178,11 +1184,13 @@ private fun Content(
                             verticalArrangement = Arrangement.spacedBy(1.dp),
                             horizontalAlignment = Alignment.CenterHorizontally
                         ) {
-                            DdayContent(time = when {
-                                remainDay.day == 0 -> "D-DAY"
-                                remainDay.isPlus -> "D+"
-                                else -> "D-"
-                            } to remainDay.day)
+                            DdayContent(
+                                time = when {
+                                    remainDay.day == 0 -> "D-DAY"
+                                    remainDay.isPlus -> "D+"
+                                    else -> "D-"
+                                } to remainDay.day
+                            )
                             Row(
                                 verticalAlignment = Alignment.CenterVertically,
                                 horizontalArrangement = Arrangement.spacedBy(4.dp, Alignment.CenterHorizontally)
@@ -1191,7 +1199,7 @@ private fun Content(
                                     TimerContent(time = hour, backText = "시간")
                                 }
                                 TimerContent(time = min, backText = "분")
-                                TimerContent(time = sec, backText = if(remainTime.isPlus) "초 지남" else "초 남음")
+                                TimerContent(time = sec, backText = if (remainTime.isPlus) "초 지남" else "초 남음")
                             }
                         }
                     }
@@ -1238,7 +1246,7 @@ private fun Content(
                 val second = imageMedias.find { it.key == firstIndex + 2 }
                 val third = imageMedias.find { it.key == firstIndex + 3 }
                 val forth = imageMedias.find { it.key == firstIndex + 4 }
-                
+
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -1249,14 +1257,14 @@ private fun Content(
                         .padding(bottom = 2.dp),
                     horizontalArrangement = Arrangement.spacedBy(2.dp)
                 ) {
-                    if(isOdd) {
+                    if (isOdd) {
                         Box(
                             modifier = Modifier
                                 .weight(1f)
                                 .aspectRatio(.5f)
                         ) {
                             playerStates.getOrNull(column)?.let { playerState ->
-                                videoMedias.find { it.key == column + 1}?.thumb?.let { thumb ->
+                                videoMedias.find { it.key == column + 1 }?.thumb?.let { thumb ->
                                     ImprovedVideoPlayer(
                                         thumb = thumb,
                                         playerState = playerState
@@ -1265,7 +1273,7 @@ private fun Content(
                             }
                         }
                     }
-                    
+
                     Column(
                         modifier = Modifier.weight(2f),
                         verticalArrangement = Arrangement.spacedBy(2.dp)
@@ -1276,9 +1284,9 @@ private fun Content(
                                 horizontalArrangement = Arrangement.spacedBy(2.dp)
                             ) {
                                 repeat(2) { j ->
-                                    val item = when(i) {
-                                        0 -> if(j == 0) first else second
-                                        else -> if(j == 0) third else forth
+                                    val item = when (i) {
+                                        0 -> if (j == 0) first else second
+                                        else -> if (j == 0) third else forth
                                     }
                                     with(sharedTransitionScope) {
                                         AsyncImage(
@@ -1288,7 +1296,7 @@ private fun Content(
                                                 .clickable { showDetail.invoke(item?.fileName ?: "") }
                                                 .aspectRatio(1f)
                                                 .then(
-                                                    if(detailKey.isBlank() || detailKey == item?.fileName)
+                                                    if (detailKey.isBlank() || detailKey == item?.fileName)
                                                         Modifier.sharedBounds(
                                                             sharedContentState = rememberSharedContentState(key = item?.fileName ?: ""),
                                                             animatedVisibilityScope = animatedContentScope,
@@ -1314,8 +1322,8 @@ private fun Content(
                             }
                         }
                     }
-                    
-                    if(isOdd.not()) {
+
+                    if (isOdd.not()) {
                         Box(
                             modifier = Modifier
                                 .weight(1f)
@@ -1323,7 +1331,7 @@ private fun Content(
                                 .aspectRatio(.5f)
                         ) {
                             playerStates.getOrNull(column)?.let { playerState ->
-                                videoMedias.find { it.key == column + 1}?.thumb?.let { thumb ->
+                                videoMedias.find { it.key == column + 1 }?.thumb?.let { thumb ->
                                     ImprovedVideoPlayer(
                                         thumb = thumb,
                                         playerState = playerState
@@ -1700,7 +1708,7 @@ private fun Content(
                         modifier = Modifier
                             .weight(1f)
                             .clickable {
-                                window.location.href = if(isMobileDevice())
+                                window.location.href = if (isMobileDevice())
                                     "kakaomap://place?id=27339651"
                                 else
                                     "https://map.kakao.com/link/map/27339651"
@@ -1734,7 +1742,7 @@ private fun Content(
                         modifier = Modifier
                             .weight(1f)
                             .clickable {
-                                window.location.href = if(isMobileDevice())
+                                window.location.href = if (isMobileDevice())
                                     "nmap://place?lng=${weddingLng}&lat=${weddingLat}&name=MJ컨벤션&appname=https://wonseokk.github.io/Wedding/"
                                 else
                                     "https://map.naver.com?lng=${weddingLng}&lat=${weddingLat}&title=MJ컨벤션"
@@ -1764,7 +1772,7 @@ private fun Content(
                             )
                         }
                     }
-                    if(isMobileDevice())
+                    if (isMobileDevice())
                         Card(
                             modifier = Modifier
                                 .weight(1f)
@@ -1857,7 +1865,7 @@ private fun Content(
             item(
                 key = "spacer"
             ) {
-                if(dimension.floatValue > 2f) {
+                if (dimension.floatValue > 2f) {
                     Spacer(modifier = Modifier.height(80.dp * (dimension.floatValue - 2)))
                 } else {
                     Spacer(modifier = Modifier.height(50.dp))
@@ -1882,17 +1890,32 @@ fun SvgAnimationContainer(
     var composableHeight by remember { mutableStateOf(0) }
     var svgContainer by remember { mutableStateOf<HTMLDivElement?>(null) }
 
-    LaunchedEffect(isFront, positionX, positionY, composableWidth, composableHeight) {
+    // SVG 리소스를 안전하게 로드
+    var isResourceLoaded by remember { mutableStateOf(false) }
+
+    LaunchedEffect(Unit) {
         try {
-            if(composableHeight == 0 || composableWidth == 0)
-                return@LaunchedEffect
-            if(svgContent == null)
-                svgContent = Res.readBytes("drawable/wedding_animation.svg").decodeToString()
-            svgContent?.let {
-                setupSvgAnimation(isFront, it, composableHeight)
-            }
+            delay(500) // 다른 리소스들이 로드된 후에 시도
+            svgContent = Res.readBytes("drawable/wedding_animation.svg").decodeToString()
+            isResourceLoaded = true
         } catch (e: Exception) {
-            println("SVG 로드 중 오류 발생: ${e.message}")
+            // 리소스 로드 실패 시 조용히 처리
+            isResourceLoaded = false
+        }
+    }
+
+    LaunchedEffect(isFront, positionX, positionY, composableWidth, composableHeight, isResourceLoaded) {
+        // 모든 조건이 만족될 때만 SVG 애니메이션 설정
+        if (!isResourceLoaded || composableHeight == 0 || composableWidth == 0) {
+            return@LaunchedEffect
+        }
+
+        svgContent?.let { content ->
+            try {
+                setupSvgAnimation(isFront, content, composableHeight)
+            } catch (e: Exception) {
+                // 애니메이션 설정 오류는 조용히 처리
+            }
         }
     }
 
@@ -1931,7 +1954,7 @@ fun setupSvgAnimation(isFront: Boolean, svgContent: String, height: Int) {
     try {
         var container = document.getElementById("svg-animation-container") as? HTMLDivElement
         container?.remove()
-        if(isFront.not())
+        if (isFront.not())
             return
         container = document.createElement("div") as HTMLDivElement
         container.id = "svg-animation-container"
@@ -1956,7 +1979,7 @@ fun setupSvgAnimation(isFront: Boolean, svgContent: String, height: Int) {
             this.height = "${height}px"
             this.zIndex = "100"
         }
-        
+
     } catch (e: Exception) {
         println("SVG 애니메이션 설정 중 오류 발생: ${e.message}")
     }
@@ -1985,7 +2008,7 @@ private fun DdayContent(
     fontSize: Int = 28,
     color: Color = Color(0xFFB76E79),
 ) {
-    if(time.second == 0){
+    if (time.second == 0) {
         Text(
             text = time.first,
             textAlign = TextAlign.Center,
