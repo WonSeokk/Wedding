@@ -48,8 +48,24 @@
         .wedding-date {
             font-size: 16px;
             color: #e0e0e0;
-            margin-bottom: 40px;
+            margin-bottom: 10px;
             opacity: 0.9;
+        }
+
+        .wedding-location {
+            font-size: 14px;
+            color: #B76E79;
+            margin-bottom: 8px;
+            opacity: 0.9;
+            font-weight: 400;
+        }
+
+        .wedding-address {
+            font-size: 12px;
+            color: #c0c0c0;
+            margin-bottom: 40px;
+            opacity: 0.8;
+            line-height: 1.4;
         }
 
         .loading-spinner {
@@ -112,21 +128,29 @@
             animation-delay: 0.2s;
         }
 
+        .wedding-location {
+            animation-delay: 0.3s;
+        }
+
+        .wedding-address {
+            animation-delay: 0.4s;
+        }
+
         .loading-spinner {
             animation: fadeIn 0.8s ease-out forwards, spin 1s linear infinite;
-            animation-delay: 0.4s, 0s;
+            animation-delay: 0.5s, 0s;
         }
 
         .loading-text {
-            animation-delay: 0.6s;
+            animation-delay: 0.7s;
         }
 
         .progress-container {
-            animation-delay: 0.8s;
+            animation-delay: 0.9s;
         }
 
         .progress-text {
-            animation-delay: 1.0s;
+            animation-delay: 1.1s;
         }
     </style>
 
@@ -336,7 +360,9 @@
 <div id="initial-loading">
     <div class="loading-content">
         <div class="wedding-title">원석 ❤️ 서영</div>
-        <div class="wedding-date">2025년 08월 30일</div>
+        <div class="wedding-date">2025년 08월 30일 토요일 오후 5:30</div>
+        <div class="wedding-location">MJ컨벤션 그랜드볼룸 5층</div>
+        <div class="wedding-address">경기도 부천시 소사구 소사본동 65-7<br/>소사역 1번출구 건너편 좌측(70m)</div>
         <div class="loading-spinner"></div>
         <div class="loading-text">Loading...</div>
         <div class="progress-container">
