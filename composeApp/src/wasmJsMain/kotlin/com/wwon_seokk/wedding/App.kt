@@ -213,7 +213,7 @@ fun App() {
         var isAppReady by remember { mutableStateOf(false) }
         val coverImageRequest = remember {
             ImageRequest.Builder(context)
-                .data(Res.getUri("/drawable/cover.png"))
+                .data("${CDN_BASE_URL}asset/cover.png")
                 .diskCacheKey("cover")
                 .fetcherFactory(ktorFactory)
                 .build()
@@ -546,7 +546,7 @@ private fun Cover(
     Box(modifier = modifier) {
         AsyncImage(
             model = ImageRequest.Builder(LocalPlatformContext.current)
-                .data(Res.getUri("/drawable/cover.png"))
+                .data("${CDN_BASE_URL}asset/cover.png")
                 .diskCacheKey("cover")
                 .fetcherFactory(ktorFactory)
                 .build(),

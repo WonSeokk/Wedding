@@ -8,9 +8,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
 import org.jetbrains.compose.resources.Font
 import wedding.composeapp.generated.resources.MaruBuri_Bold
-import wedding.composeapp.generated.resources.MaruBuri_ExtraLight
 import wedding.composeapp.generated.resources.MaruBuri_Regular
-import wedding.composeapp.generated.resources.MaruBuri_SemiBold
 import wedding.composeapp.generated.resources.Parisienne_Regular
 import wedding.composeapp.generated.resources.Res
 
@@ -24,19 +22,7 @@ val fontFamily
             ),
             Font(
                 Res.font.MaruBuri_Regular,
-                weight = FontWeight.Normal,
-            ),
-            Font(
-                Res.font.MaruBuri_Regular,
                 weight = FontWeight.Medium,
-            ),
-            Font(
-                Res.font.MaruBuri_SemiBold,
-                weight = FontWeight.SemiBold,
-            ),
-            Font(
-                Res.font.MaruBuri_ExtraLight,
-                weight = FontWeight.Thin,
             )
         )
 
@@ -68,22 +54,6 @@ val enFontFamily
             Font(
                 Res.font.Parisienne_Regular,
                 weight = FontWeight.Bold,
-            ),
-            Font(
-                Res.font.Parisienne_Regular,
-                weight = FontWeight.Normal,
-            ),
-            Font(
-                Res.font.Parisienne_Regular,
-                weight = FontWeight.Medium,
-            ),
-            Font(
-                Res.font.Parisienne_Regular,
-                weight = FontWeight.SemiBold,
-            ),
-            Font(
-                Res.font.Parisienne_Regular,
-                weight = FontWeight.Thin,
             )
         )
 
