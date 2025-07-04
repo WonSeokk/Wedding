@@ -33,8 +33,8 @@
 
 #fall .section_tit {color: #ca7e7a;}
 /* 앨범 가로 */
-.swiper-button-prev, .swiper-container-rtl .swiper-button-next {background-image: url(../../card/skin/img/left.svg);}
-.swiper-button-next, .swiper-container-rtl .swiper-button-prev {background-image: url(../../card/skin/img/right.svg);}
+.swiper-button-prev, .swiper-container-rtl .swiper-button-next {background-image: url(../../skin/img/left.svg);}
+.swiper-button-next, .swiper-container-rtl .swiper-button-prev {background-image: url(../../skin/img/right.svg);}
 .swiper-button-next, .swiper-button-prev {background-size: 15px;}
 .swiper-button-next:after, .swiper-button-prev:after {opacity: 0;}
 
