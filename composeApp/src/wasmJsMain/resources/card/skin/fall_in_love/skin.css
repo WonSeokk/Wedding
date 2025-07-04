@@ -1,0 +1,54 @@
+
+#fall {text-align: center;}
+#fall .main {position: relative;}
+
+#fall .main .top_txt {padding: 80px 0 40px;}
+#fall .main .top_txt .mini {font-size: 0.75rem; letter-spacing: 8px; margin-bottom: 20px; display: inline-block; width: 100%;}
+#fall .main .top_txt .main_name span {font-size: 1.125rem;}
+#fall .main img {width: 100%; display: block;}
+#fall .main .bottom_txt {padding: 50px 0;}
+#fall .main .bottom_txt p:first-of-type {margin-bottom: 15px;}
+#fall .main .bottom_txt p {font-size: 0.9375rem;}
+#fall .main .bottom_txt p span {font-size: 0.9375rem;}
+
+#fall .all_wrap {background-color: #fafafa;}
+#fall .main_img_wrap {display: inline-block; width:100%; overflow: hidden; position: relative;}
+#fall .main .moving {/*background-image: url(/card/skin/fall_in_love/img/moving2.gif);*/ background-size: cover; background-repeat: no-repeat; height: 100%; position: absolute; top: 0; width: 100%;}
+/* 인사말 */
+#fall .greeting_wrap {padding: 0px 16%;line-height: 35px;}
+#fall .greeting_wrap .greeting_inner img {width: 20px;}
+#fall .greeting_wrap .greeting_inner span {margin-bottom: 20px; display: inline-block; width: 100%;}
+
+/* 혼주에게 슬라이드 */
+#fall .call_wrap .call_box_btn p {background-color: #ede7e7; border-radius: 4px;}
+#fall .call_pop_down > p {background-color: #ca7e7a;}
+#fall .call_pop_down > p span {color: #fff;}
+#fall .call_pop_down > p i {color: #fff;}
+
+/* 달력 */
+#fall .calendar_wrap #kCalendar {padding: 0 16%;}
+#fall #kCalendar .weddingday {background-color: #ca7e7a;}
+#fall .remain i {vertical-align: bottom; color: #ca7e7a;}
+
+
+#fall .section_tit {color: #ca7e7a;}
+/* 앨범 가로 */
+.swiper-button-prev, .swiper-container-rtl .swiper-button-next {background-image: url(/card/skin/img/left.svg);}
+.swiper-button-next, .swiper-container-rtl .swiper-button-prev {background-image: url(/card/skin/img/right.svg);}
+.swiper-button-next, .swiper-button-prev {background-size: 15px;}
+.swiper-button-next:after, .swiper-button-prev:after {opacity: 0;}
+
+/* 지도 */
+#fall .map_inner .way_guide .way_tit {color: #ca7e7a;}
+#fall .map_inner .map_detail {background-color: #ca7e7a; color: #fff;}
+
+/* 방명록 */
+#fall .book_btn a {background-color: #ede7e7;}
+/* 방명록 상세 */
+#fall .book_wrap .book_title {background-color: #ca7e7a; color: #fff;}
+#fall .from_em {color: #ca7e7a;}
+
+/* 참석여부 */
+#invite_wrap .attend_inner .check_attend {background-color: #ede7e7;}
+.offset_7{position: relative;}
+.bgm_stop{position: absolute; top: 80px; width: 30%; height: 25%; z-index: 999; transform: translate(120%,60%);}

@@ -1,0 +1,10 @@
+#watermark {display: inline-block; width: 100%; padding: 30px 0; background: #6187af; text-align: center; }
+#watermark .inner {width: 100%;}
+#watermark a {display: inline-block; padding: 10px 20px; border-radius: 20px; border: 1px solid #fff; font-size: 14px; color: #fff; margin:20px 0 0 0;}
+#watermark p {color: #fff; width: 100%; line-height: 20px; }
+#watermark p:nth-of-type(2) {font-family: 'pre-B'; margin:10px 0}
+
+#samplemark {display: inline-block; width: 100%; padding: 20px 0; background: #363636; text-align: center; }
+#samplemark .inner {width: 100%;}
+#samplemark p {color: #fff; width: 100%; line-height: 20px; }
+#samplemark p:nth-of-type(2) {font-family: 'pre-B'; margin:10px 0}

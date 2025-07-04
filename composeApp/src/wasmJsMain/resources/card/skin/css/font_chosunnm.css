@@ -1,0 +1,11 @@
+@font-face {
+    font-family: 'ChosunNm';
+    font-weight: normal;
+    font-style: normal;
+    src: url('/card/font/ChosunNm.woff2') format('woff2'),
+         url('/card/font/ChosunNm.woff') format('woff'),
+         url('/card/font/ChosunNm.ttf') format("truetype");
+    font-display: swap;
+}
+
+*{font-family: 'ChosunNm';}

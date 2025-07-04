@@ -1,0 +1,18 @@
+.at_back.editor {position: absolute; background-color: rgba(0,0,0,0.5); top: 0; left: 0; width: 100%; z-index: 10; height: 700px;}
+.attend_top.editor {position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 11; padding: 25px; border-radius: 4px; background-color: #fff; width: 280px;}
+
+.at_back.card {position: fixed; top: 0; left: 0; right: 0; bottom: 0; background-color: rgba(0,0,0,0.5); z-index: 10; width: 100%;}
+.attend_top.card {position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 11; padding: 25px; border-radius: 4px; background-color: #fff; width: 280px;}
+
+.attend_top .close_p {text-align: right; cursor: pointer;}
+.attend_top .close_p .at_close {font-size: 1.25rem;}
+.attend_top .tit {font-size: 18px !important; font-family: 'pre-m' !important; margin-bottom: 20px;}
+.attend_top .txt {margin-bottom: 20px; line-height: 25px; font-size: 14px !important; color: #777 !important;}
+.attend_top .gr_br_wrap {margin-bottom: 20px; border-bottom: 1px dotted #ededed; display: inline-block; width: 100%; padding-bottom: 20px;}
+.attend_top .gr_br_wrap p {display: inline-block;}
+.attend_top .gr_br_wrap i.xi-heart {color: #fdb9d9 !important;}
+.attend_top .check_point {text-align: left; line-height: 23px; margin-bottom: 10px;}
+.attend_top .check_point i {font-size: 12px !important; color: #999;}
+.attend_top .check_point p {font-size: 12px !important; color: #999; font-family: 'pre-r' !important;}
+.attend_top .check_point span {font-size: 12px !important; font-family: 'pre-r' !important;}
+.attend_top .check_attend {background-color: #333; color: #fff !important; border-radius: 3px; padding: 15px; font-family: 'pre-r' !important; cursor: pointer; font-size: 14px !important;}
