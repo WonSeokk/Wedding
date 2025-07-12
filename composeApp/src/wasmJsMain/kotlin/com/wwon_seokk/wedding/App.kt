@@ -1665,7 +1665,7 @@ private fun Content(
                         textAlign = TextAlign.Center
                     )
                     Text(
-                        text = "MJ컨벤션 그랜드볼룸 5층",
+                        text = "MJ컨벤션 5층 그랜드볼룸홀",
                         style = fontFamily.bodyLarge,
                         fontSize = 14.sp,
                         color = Color(0xFF574B40),

@@ -694,18 +694,23 @@ function kCalendar(id, date) {
 
 
 
-function wdDday(t, w) {
-  var dat1 = new Date(t);
-  var dat2 = new Date(w);
-  var diff = dat2 - dat1;
-  var currDay = 24 * 60 * 60 * 1000; // 시 * 분 * 초 * 밀리세컨
+function wdDday(weddingDate) {
+  var today = new Date();
+  var wedding = new Date(weddingDate);
+  
+  // 시간을 0으로 설정하여 날짜만 비교
+  today.setHours(0, 0, 0, 0);
+  wedding.setHours(0, 0, 0, 0);
+  
+  var diff = wedding - today;
+  var dayDiff = Math.ceil(diff / (24 * 60 * 60 * 1000));
 
-  if (dat2 < dat1) {
-    $('#wd_d-day').text("이 지났습니다");
-  } else if (dat2 > dat1) {
-    $('#wd_d-day').text(" " + parseInt(diff / currDay) + "일 전");
-  } else if (dat2 = dat1) {
-    $('#wd_d-day').text("이 오늘입니다");
+  if (dayDiff > 0) {
+    $('#wd_d-day').text(" " + dayDiff + "일 전");
+  } else if (dayDiff === 0) {
+    $('#wd_d-day').text("D-DAY");
+  } else {
+    $('#wd_d-day').text(Math.abs(dayDiff) + "일 지남");
   }
 }
 
